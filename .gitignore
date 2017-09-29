@@ -1,0 +1,6 @@
+__pycache__/
+untracked/
+*.py[cod]
+*.npy
+*.pkl
+

@@ -7,9 +7,6 @@ Created for Python 3
 @email: sgaebel@star.sr.bham.ac.uk
 """
 
-import pyopencl as ocl
-from .utilities import cdouble
-
 
 # TODO: Other potentially useful stuff:
 # * integration routine
@@ -156,7 +153,7 @@ cdouble log_trunc_gaussian(const cdouble value, const cdouble mean, const cdoubl
     const cdouble log_sqrt_2_pi = -0.22579135264472741;
     return log_sqrt_2_pi - log(stddev) - 0.5 * pown((value - mean) * inv_stddev, 2) - log(erf((high - mean) * M_SQRT1_2 * inv_stddev) - erf((low - mean) * M_SQRT1_2 * inv_stddev));
 }
-"""  # TODO: implement
+"""
 
 power_law_templates = """
 cdouble power_law(const cdouble value, const cdouble slope, const cdouble low, const cdouble high) {
@@ -189,13 +186,8 @@ cdouble log_power_law_falling(const cdouble value, const cdouble slope, const cd
 """
 
 
-def basic_code(queue):
-    if cdouble(queue)(42).nbytes >= 8:
-        type_source = '#define cdouble double'
-    else:
-        print('WARNING: no 64bit float support available for this device.')
-        type_source = '#define cdouble float'
-    return '\n'.join([type_source, math_constants, sum_template,
+def basic_code():
+    return '\n'.join([math_constants, sum_template,
                       product_template, logsumexp_template, logaddexp_template,
                       mean_template, stddev_template, min_template,
                       max_template, gaussian_pdf_templates,

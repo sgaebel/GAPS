@@ -19,11 +19,41 @@ import scipy.integrate
 import scipy.misc
 import scipy.stats
 
-READ_ONLY = ocl.mem_flags.READ_ONLY
-WRITE_ONLY = ocl.mem_flags.WRITE_ONLY
-COPY_HOST_PTR = ocl.mem_flags.COPY_HOST_PTR
 
 VISUAL = None
+
+
+"""
+@pytest.fixture(params=[model1, model2, model3])
+def model(request):
+    return request.param
+
+def test_awesome(model):
+    assert model == "awesome"
+
+
+
+
+
+
+
+
+def pytest_generate_tests(metafunc):
+    if "model" in metafunc.funcargnames:
+        models = [model1,model2,model3]
+        for model in models:
+            metafunc.addcall(funcargs=dict(model=model))
+
+def test_awesome(model):
+    assert model == "awesome"
+"""
+
+
+device_list = []
+for platform_idx, platform in enumerate(ocl.get_platforms()):
+    for device_idx, device in enumerate(platform.get_devices()):
+        device_list.append((platform_idx, platform, device_idx, device))
+
 
 
 def device_iterator():
@@ -41,7 +71,8 @@ def type_and_tolerance(platform_idx, device_idx):
         return np.float32, 1e-4
 
 
-def direct_evaluation(plat_idx, dev_idx, source_code, read_only, write_only):
+def direct_evaluation(plat_idx, dev_idx, source_code, read_only, write_only,
+                      function_name='test_function'):
     context, queue = gaps.create_context_and_queue(platform_idx=plat_idx,
                                                    device_idx=dev_idx)
     read_only = [buffer.astype(gaps._cdouble(queue)) for buffer in read_only]
@@ -52,7 +83,7 @@ def direct_evaluation(plat_idx, dev_idx, source_code, read_only, write_only):
                      for x in write_only]
     buffers = read_buffers + write_buffers
     program = ocl.Program(context, gaps._basic_code(queue)+source_code).build()
-    event = program.test_function(queue, (1,), (1,), *buffers)
+    event = getattr(program, function_name)(queue, (1,), (1,), *buffers)
     ocl.enqueue_barrier(queue, wait_for=[event])
 
     for idx, wo_buffer in enumerate(write_buffers):
@@ -581,22 +612,22 @@ if __name__ == '__main__':
     VISUAL = True
     import matplotlib.pyplot as plt
 
-#    test_math_function_results()
-#    test_gaussian_normed_pdf_values()
-#    test_gaussian_normed_pdf_integral()
-#    test_log_gaussian_normed_pdf_values()
-#    test_gaussian_pdf_values()
-#    test_log_gaussian_pdf_values()
-#    test_trunc_gaussian_pdf_values()
-#    test_trunc_gaussian_pdf_integral()
-#    test_log_trunc_gaussian_pdf_values()
-    test_trunc_gaussian_pdf_values()
-    test_trunc_gaussian_pdf_integral()
-    test_log_trunc_gaussian_pdf_values()
-#    test_power_law_pdf_values()
-#    test_power_law_pdf_integral()
-#    test_power_law_falling_pdf_values()
-#    test_log_power_law_pdf_values()
-#    test_log_power_law_falling_pdf_values()
-
-
+    for args in device_list:
+        test_math_function_results()
+    #    test_gaussian_normed_pdf_values()
+    #    test_gaussian_normed_pdf_integral()
+    #    test_log_gaussian_normed_pdf_values()
+    #    test_gaussian_pdf_values()
+    #    test_log_gaussian_pdf_values()
+    #    test_trunc_gaussian_pdf_values()
+    #    test_trunc_gaussian_pdf_integral()
+    #    test_log_trunc_gaussian_pdf_values()
+    #    test_trunc_gaussian_pdf_values()
+    #    test_trunc_gaussian_pdf_integral()
+    #    test_log_trunc_gaussian_pdf_values()
+    #    test_power_law_pdf_values()
+    #    test_power_law_pdf_integral()
+    #    test_power_law_falling_pdf_values()
+    #    test_log_power_law_pdf_values()
+    #    test_log_power_law_falling_pdf_values()
+    break

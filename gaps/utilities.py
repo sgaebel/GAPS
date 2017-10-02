@@ -1,14 +1,67 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created for Python 3
+Assorted auxiliary functions.
 
-@author: Sebastian Gaebel
+These include (amongst other things) helper functions for creating
+GPU buffers, compiling kernels, checking the availability of 64bit
+floats, printing available devices and platform with detailed
+information.
+
+@author: Sebastian M. Gaebel
 @email: sgaebel@star.sr.bham.ac.uk
 """
 
+from .auxiliary_sources import basic_code
 import numpy as np
 import pyopencl as ocl
+
+
+BUILD_OPTIONS = ['-cl-fp32-correctly-rounded-divide-sqrt',
+                 '-Werror']
+
+
+def create_read_buffer(context, host):
+    """Shorthand for creating a read-only buffer on the GPU."""
+    # TODO: Figure out what exactly COPY_HOST_PTR does.
+    flags = ocl.mem_flags.READ_ONLY | ocl.mem_flags.COPY_HOST_PTR
+    return ocl.Buffer(context, flags, hostbuf=host)
+
+
+def create_write_buffer(context, host):
+    """Shorthand for creating a write-only buffer on the GPU."""
+    return ocl.Buffer(context, ocl.mem_flags.WRITE_ONLY, host.nbytes)
+
+
+def cdouble(queue):
+    """Helper which checks if 'fp64' is mentioned in the extensions of
+    the device associated with the given queue, i.e. if support for
+    for 64-bit floats is available."""
+    if 'fp64' in queue.device.get_info(ocl.device_info.EXTENSIONS):
+        return np.float64
+    else:
+        return np.float32
+
+
+def compile_kernel(context, queue, source_code, function_name,
+                   compiler_flags=None):
+    """Compile the kernel given in `source_code` together with
+    the GAPS math definitions and functions, and cdouble definition.
+    Compiler flags can be given in addition to the default flags
+    defined in `utilities.py`."""
+    if cdouble(queue)(42).nbytes >= 8:
+        type_definitions = """
+        #define cdouble double"""
+    else:
+        print('WARNING: no 64bit float support available for this device.')
+        type_definitions = """
+        #define cdouble float"""
+    flags = BUILD_OPTIONS[:]
+    if compiler_flags is not None:
+        flags.extend(compiler_flags)
+    full_source = type_definitions + basic_code() + source_code
+    program = ocl.Program(context, full_source).build(flags)
+    return getattr(program, function_name)
 
 
 def memory_size(n_bytes, *, SI=False, template='{:.2f} {} ({} B)'):
@@ -53,6 +106,59 @@ def memory_size(n_bytes, *, SI=False, template='{:.2f} {} ({} B)'):
     else:
         unit = final_unit
     return template.format(n_units, unit, n_bytes)
+
+
+def create_context_and_queue(platform_idx=None, device_idx=None):
+    """
+    Convenience function to create the OpenCL context and queue needed
+    to create buffers and create and call kernels.
+
+    Parameters
+    ----------
+    platform_idx : int or None
+    device_idx : int or None
+        Indices of the chosen OpenCL platform and device on that
+        platform. If both are None the device is chosen via
+        `pyopencl.creat_some_context()`. Default: None.
+
+    Returns
+    -------
+    context, queue : tuple
+        OpenCL context and the associated command queue.
+
+    Raises
+    ------
+        TODO: unavailable devices or platforms
+    """
+    if platform_idx is None:
+        if device_idx is None:
+            context = ocl.create_some_context()
+            queue = ocl.CommandQueue(context)
+            return context, queue
+        platform_idx = 0
+    if device_idx is None:
+        device_idx = 0
+
+    available_platforms = ocl.get_platforms()
+    if len(available_platforms) < 1:
+        raise ValueError('No platform found.')
+    elif len(available_platforms) <= platform_idx:
+        raise IndexError('Index {} invalid for {} available platforms.'
+                         ''.format(platform_idx, len(available_platforms)))
+    platform = available_platforms[platform_idx]
+
+    available_devices = platform.get_devices()
+    if len(available_devices) < 1:
+        raise ValueError('No device found.')
+    elif len(available_devices) <= device_idx:
+        raise IndexError('Index {} invalid for {} available devices.'
+                         ''.format(device_idx, len(available_devices)))
+    device = available_devices[device_idx]
+
+    context = ocl.Context([device])
+    queue = ocl.CommandQueue(context)
+
+    return context, queue
 
 
 def print_devices(detail_level=0):
@@ -320,75 +426,6 @@ def print_devices(detail_level=0):
                                            formatting(info)))
         print()
     return
-
-
-def create_context_and_queue(platform_idx=None, device_idx=None):
-    """
-    Convenience function to create the OpenCL context and queue needed
-    to create buffers and create and call kernels.
-
-    Parameters
-    ----------
-    platform_idx : int or None
-    device_idx : int or None
-        Indices of the chosen OpenCL platform and device on that
-        platform. If both are None the device is chosen via
-        `pyopencl.creat_some_context()`. Default: None.
-
-    Returns
-    -------
-    context, queue : tuple
-        OpenCL context and the associated command queue.
-
-    Raises
-    ------
-        TODO: unavailable devices or platforms
-    """
-    if platform_idx is None:
-        if device_idx is None:
-            context = ocl.create_some_context()
-            queue = ocl.CommandQueue(context)
-            return context, queue
-        platform_idx = 0
-    if device_idx is None:
-        device_idx = 0
-
-    available_platforms = ocl.get_platforms()
-    if len(available_platforms) < 1:
-        raise ValueError('No platform found.')
-    elif len(available_platforms) <= platform_idx:
-        raise IndexError('Index {} invalid for {} available platforms.'
-                         ''.format(platform_idx, len(available_platforms)))
-    platform = available_platforms[platform_idx]
-
-    available_devices = platform.get_devices()
-    if len(available_devices) < 1:
-        raise ValueError('No device found.')
-    elif len(available_devices) <= device_idx:
-        raise IndexError('Index {} invalid for {} available devices.'
-                         ''.format(device_idx, len(available_devices)))
-    device = available_devices[device_idx]
-
-    context = ocl.Context([device])
-    queue = ocl.CommandQueue(context)
-
-    return context, queue
-
-
-def cdouble(queue):
-    if 'fp64' in queue.device.get_info(ocl.device_info.EXTENSIONS):
-        return np.float64
-    else:
-        return np.float32
-
-
-def make_callable(function_source):
-    # sanitize opencl keywords
-    # compile source into .so
-    # create ctypes wrapper
-    # return callable wrapper
-    # tempdir?
-    raise NotImplementedError
 
 
 if __name__ == '__main__':

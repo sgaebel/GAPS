@@ -141,6 +141,9 @@ cdouble log_gaussian_normed(const cdouble value, const cdouble mean, const cdoub
 trunc_gaussian_pdf_templates = """
 cdouble trunc_gaussian(const cdouble value, const cdouble mean, const cdouble stddev,
                       const cdouble low, const cdouble high) {
+    if(value < low || value > high) {
+        return 0.;
+    }
     const cdouble inv_stddev = 1.0 / stddev;
     const cdouble erf_L = erf((low - mean) * M_SQRT1_2 * inv_stddev);
     const cdouble erf_H = erf((high - mean) * M_SQRT1_2 * inv_stddev);
@@ -149,6 +152,9 @@ cdouble trunc_gaussian(const cdouble value, const cdouble mean, const cdouble st
 
 cdouble log_trunc_gaussian(const cdouble value, const cdouble mean, const cdouble stddev,
                           const cdouble low, const cdouble high) {
+    if(value < low || value > high) {
+        return -INFINITY;
+    }
     const cdouble inv_stddev = 1.0 / stddev;
     const cdouble log_sqrt_2_pi = -0.22579135264472741;
     return log_sqrt_2_pi - log(stddev) - 0.5 * pown((value - mean) * inv_stddev, 2) - log(erf((high - mean) * M_SQRT1_2 * inv_stddev) - erf((low - mean) * M_SQRT1_2 * inv_stddev));
@@ -157,6 +163,9 @@ cdouble log_trunc_gaussian(const cdouble value, const cdouble mean, const cdoubl
 
 power_law_templates = """
 cdouble power_law(const cdouble value, const cdouble slope, const cdouble low, const cdouble high) {
+    if(value < low || value > high) {
+        return 0.;
+    }
     if(slope == -1.) {
         return 1. / (value * (log(high) - log(low)));
     }
@@ -164,10 +173,16 @@ cdouble power_law(const cdouble value, const cdouble slope, const cdouble low, c
 }
 
 cdouble power_law_falling(const cdouble value, const cdouble slope, const cdouble cutoff) {
+    if(value < cutoff) {
+        return 0.;
+    }
     return pow(value, slope) * (-1.-slope) * pow(cutoff, -1.-slope);
 }
 
 cdouble log_power_law(const cdouble value, const cdouble slope, const cdouble low, const cdouble high) {
+    if(value < low || value > high) {
+        return -INFINITY;
+    }
     if(slope == -1.) {
         return -log(value - log(log(high) - log(low)));
     }
@@ -177,10 +192,12 @@ cdouble log_power_law(const cdouble value, const cdouble slope, const cdouble lo
     else {
         return log(1.+slope) + slope * log(value) - log(pow(high, 1.+slope) - pow(low, 1.+slope));
     }
-
 }
 
 cdouble log_power_law_falling(const cdouble value, const cdouble slope, const cdouble cutoff) {
+    if(value < cutoff) {
+        return -INFINITY;
+    }
     return log(-1.-slope) + slope * log(value) - (1.+slope) * log(cutoff);
 }
 """

@@ -22,6 +22,8 @@ import scipy.stats
 
 
 VISUAL = None
+VERBOSE = True
+N_MATH_TESTS = 3
 
 
 """
@@ -56,12 +58,49 @@ for platform_idx, platform in enumerate(ocl.get_platforms()):
         device_list.append((platform_idx, platform, device_idx, device))
 
 
+def vprint(*args, **kwargs):
+    if VERBOSE:
+        print(*args, **kwargs)
+    return
+
+
 def type_and_tolerance(platform_idx, device_idx):
     device = ocl.get_platforms()[platform_idx].get_devices()[device_idx]
     if 'fp64' in device.get_info(ocl.device_info.EXTENSIONS):
         return np.float64, 1e-8
     else:
         return np.float32, 1e-4
+
+
+# %% Math functions
+
+def test_math_function_sum(args):
+    platform_idx, platform, device_idx, device = args
+    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
+    kernel_source = """
+    __kernel void test_kernel(__global const cdouble values[N],
+                              __global cdouble ret_value[1]) {
+        ret_value[0] = sum(values, N);
+        return;
+    }
+    """
+
+    # TODO: hardcode important tests
+    # e.g.: include a zero, have some negative numbers
+    # also check against fmax
+    for idx in range(N_MATH_TESTS):
+        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
+        y_expected = np.sum(x, dtype=cdouble)
+        y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
+                                   platform_idx=platform_idx,
+                                   device_idx=device_idx,
+                                   read_only_arrays=[x],
+                                   write_only_shapes=[1],
+                                   kernel_name='test_kernel')[0][0]
+        vprint('Sum [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+               ''.format(idx, y, y_expected, y-y_expected))
+        assert abs(y - y_expected) < tolerance
+    return
 
 
 def test_math_function_product(args):
@@ -78,7 +117,7 @@ def test_math_function_product(args):
     # TODO: hardcode important tests
     # e.g.: include a zero, have some negative numbers
     # also check against fmax
-    for idx in range(10):
+    for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = np.product(x, dtype=cdouble)
         y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
@@ -87,35 +126,8 @@ def test_math_function_product(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        #print(f'Product [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
-        assert abs(y - y_expected) < tolerance
-    return
-
-
-def test_math_function_sum(args):
-    platform_idx, platform, device_idx, device = args
-    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-    kernel_source = """
-    __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = sum(values, N);
-        return;
-    }
-    """
-
-    # TODO: hardcode important tests
-    # e.g.: include a zero, have some negative numbers
-    # also check against fmax
-    for idx in range(10):
-        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-        y_expected = np.sum(x, dtype=cdouble)
-        y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
-                                   platform_idx=platform_idx,
-                                   device_idx=device_idx,
-                                   read_only_arrays=[x],
-                                   write_only_shapes=[1],
-                                   kernel_name='test_kernel')[0][0]
-        #print(f'Sum [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        vprint('Product [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+               ''.format(idx, y, y_expected, y-y_expected))
         assert abs(y - y_expected) < tolerance
     return
 
@@ -133,7 +145,7 @@ def test_math_function_logsumexp(args):
 
     # TODO: hardcode important tests
     # also check against fmax
-    for idx in range(10):
+    for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = scipy.misc.logsumexp(x)
         y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
@@ -142,7 +154,8 @@ def test_math_function_logsumexp(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        #print(f'LogSumExp [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        vprint('LogSumExp [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+               ''.format(idx, y, y_expected, y-y_expected))
         assert abs(y - y_expected) < tolerance
     return
 
@@ -160,7 +173,7 @@ def test_math_function_logaddexp(args):
 
     # TODO: hardcode important tests
     # also check against fmax
-    for idx in range(10):
+    for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 2).astype(cdouble)
         y_expected = np.logaddexp(x[0], x[1])
         y = gaps.direct_evaluation(kernel_source,
@@ -169,7 +182,8 @@ def test_math_function_logaddexp(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        #print(f'LogAddExp [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        vprint('LogAddExp [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+               ''.format(idx, y, y_expected, y-y_expected))
         assert abs(y - y_expected) < tolerance
     return
 
@@ -187,7 +201,7 @@ def test_math_function_mean(args):
 
     # TODO: hardcode important tests
     # also check against fmax
-    for idx in range(10):
+    for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = np.mean(x, dtype=cdouble)
         y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
@@ -196,7 +210,8 @@ def test_math_function_mean(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        #print(f'Mean [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        vprint('Mean [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+               ''.format(idx, y, y_expected, y-y_expected))
         assert abs(y - y_expected) < tolerance
     return
 
@@ -214,7 +229,7 @@ def test_math_function_stddev(args):
 
     # TODO: hardcode important tests
     # also check against fmax
-    for idx in range(10):
+    for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = np.std(x, dtype=cdouble)
         y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
@@ -223,7 +238,8 @@ def test_math_function_stddev(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        #print(f'StdDev [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        vprint('StdDev [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+               ''.format(idx, y, y_expected, y-y_expected))
         assert abs(y - y_expected) < tolerance
     return
 
@@ -241,7 +257,7 @@ def test_math_function_iter_min(args):
 
     # TODO: hardcode important tests
     # also check against fmax
-    for idx in range(10):
+    for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = np.min(x)
         y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
@@ -250,7 +266,8 @@ def test_math_function_iter_min(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        print(f'Min [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        vprint('Min [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+               ''.format(idx, y, y_expected, y-y_expected))
         assert abs(y - y_expected) < tolerance
     return
 
@@ -268,7 +285,7 @@ def test_math_function_iter_max(args):
 
     # TODO: hardcode important tests
     # also check against fmax
-    for idx in range(10):
+    for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = np.max(x)
         y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
@@ -277,9 +294,132 @@ def test_math_function_iter_max(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        print(f'Max [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        vprint('Max [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+               ''.format(idx, y, y_expected, y-y_expected))
         assert abs(y - y_expected) < tolerance
     return
+
+
+# %% Distributions
+
+def test_gaussian(args):
+    raise NotImplementedError
+
+
+def test_gaussian_normed(args):
+    raise NotImplementedError
+
+
+def test_log_gaussian(args):
+    raise NotImplementedError
+
+
+def test_log_gaussian_normed(args):
+    raise NotImplementedError
+
+
+def test_trunc_gaussian(args):
+    raise NotImplementedError
+
+
+def test_log_trunc_gaussian(args):
+    raise NotImplementedError
+
+
+def test_power_law(args):
+    raise NotImplementedError
+
+
+def test_power_law_falling(args):
+    raise NotImplementedError
+
+
+def test_log_power_law(args):
+    raise NotImplementedError
+
+
+def test_log_power_law_falling(args):
+    raise NotImplementedError
+
+
+# %% Distribution integrals
+
+def test_gaussian_normed_integral(args):
+    raise NotImplementedError
+
+
+def test_log_gaussian_normed_integral(args):
+    raise NotImplementedError
+
+
+def test_trunc_gaussian_integral(args):
+    raise NotImplementedError
+
+
+def test_log_trunc_gaussian_integral(args):
+    raise NotImplementedError
+
+
+def test_power_law_integral(args):
+    raise NotImplementedError
+
+
+def test_power_law_falling_integral(args):
+    raise NotImplementedError
+
+
+def test_log_power_law_integral(args):
+    raise NotImplementedError
+
+
+def test_log_power_law_falling_integral(args):
+    raise NotImplementedError
+
+
+# %% Virual confirmation for distribution shapes
+
+def visual_gaussian(args):
+    raise NotImplementedError
+
+
+def visual_gaussian_normed(args):
+    raise NotImplementedError
+
+
+def visual_log_gaussian(args):
+    raise NotImplementedError
+
+
+def visual_log_gaussian_normed(args):
+    raise NotImplementedError
+
+
+def visual_trunc_gaussian(args):
+    raise NotImplementedError
+
+
+def visual_log_trunc_gaussian(args):
+    raise NotImplementedError
+
+
+def visual_power_law(args):
+    raise NotImplementedError
+
+
+def visual_power_law_falling(args):
+    raise NotImplementedError
+
+
+def visual_log_power_law(args):
+    raise NotImplementedError
+
+
+def visual_log_power_law_falling(args):
+    raise NotImplementedError
+
+
+
+
 
 
 # %% Old Tests

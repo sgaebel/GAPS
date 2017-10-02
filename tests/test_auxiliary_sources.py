@@ -12,6 +12,7 @@ if __name__ == '__main__':
     import os
     os.chdir('..')
 
+import pytest
 import gaps
 import numpy as np
 import pyopencl as ocl
@@ -55,14 +56,6 @@ for platform_idx, platform in enumerate(ocl.get_platforms()):
         device_list.append((platform_idx, platform, device_idx, device))
 
 
-
-def device_iterator():
-    for platform_idx, platform in enumerate(ocl.get_platforms()):
-        for device_idx in range(len(platform.get_devices())):
-            yield platform_idx, device_idx
-    return
-
-
 def type_and_tolerance(platform_idx, device_idx):
     device = ocl.get_platforms()[platform_idx].get_devices()[device_idx]
     if 'fp64' in device.get_info(ocl.device_info.EXTENSIONS):
@@ -71,58 +64,225 @@ def type_and_tolerance(platform_idx, device_idx):
         return np.float32, 1e-4
 
 
-def direct_evaluation(plat_idx, dev_idx, source_code, read_only, write_only,
-                      function_name='test_function'):
-    context, queue = gaps.create_context_and_queue(platform_idx=plat_idx,
-                                                   device_idx=dev_idx)
-    read_only = [buffer.astype(gaps._cdouble(queue)) for buffer in read_only]
-    write_only = [buffer.astype(gaps._cdouble(queue)) for buffer in write_only]
-    read_buffers = [ocl.Buffer(context, READ_ONLY | COPY_HOST_PTR, hostbuf=x)
-                    for x in read_only]
-    write_buffers = [ocl.Buffer(context, WRITE_ONLY, x.nbytes)
-                     for x in write_only]
-    buffers = read_buffers + write_buffers
-    program = ocl.Program(context, gaps._basic_code(queue)+source_code).build()
-    event = getattr(program, function_name)(queue, (1,), (1,), *buffers)
-    ocl.enqueue_barrier(queue, wait_for=[event])
+def test_math_function_product(args):
+    platform_idx, platform, device_idx, device = args
+    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
+    kernel_source = """
+    __kernel void test_kernel(__global const cdouble values[N],
+                              __global cdouble ret_value[1]) {
+        ret_value[0] = product(values, N);
+        return;
+    }
+    """
 
-    for idx, wo_buffer in enumerate(write_buffers):
-        ocl.enqueue_copy(queue, write_only[idx], wo_buffer)
-    return write_only
+    # TODO: hardcode important tests
+    # e.g.: include a zero, have some negative numbers
+    # also check against fmax
+    for idx in range(10):
+        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
+        y_expected = np.product(x, dtype=cdouble)
+        y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
+                                   platform_idx=platform_idx,
+                                   device_idx=device_idx,
+                                   read_only_arrays=[x],
+                                   write_only_shapes=[1],
+                                   kernel_name='test_kernel')[0][0]
+        #print(f'Product [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        assert abs(y - y_expected) < tolerance
+    return
 
 
-def test_math_function_results():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        values = np.random.uniform(0, 42, size=12)
-        return_values = np.empty(8)
-        defines = '#define N_VALUES {}'.format(len(values))
-        kernel_source = """
-        __kernel void test_function(__global const cdouble values[N_VALUES],
-                                    __global cdouble return_values[8]) {
-            return_values[0] = product(values, N_VALUES);
-            return_values[1] = sum(values, N_VALUES);
-            return_values[2] = logsumexp(values, N_VALUES);
-            return_values[3] = logaddexp(values[0], values[N_VALUES-1]);
-            return_values[4] = mean(values, N_VALUES);
-            return_values[5] = stddev(values, N_VALUES);
-            return_values[6] = iter_min(values, N_VALUES);
-            return_values[7] = iter_max(values, N_VALUES);
-        }
-        """
-        source_code = defines + kernel_source
-        return_values = direct_evaluation(platform_idx, device_idx,
-                                          source_code,
-                                          read_only=[values],
-                                          write_only=[return_values])[0]
-        assert abs((return_values[0] - np.product(values))/np.product(values)) < tolerance
-        assert abs(return_values[1] - np.sum(values)) < tolerance
-        assert abs(return_values[2] - scipy.misc.logsumexp(values)) < tolerance
-        assert abs(return_values[3] - np.logaddexp(values[0], values[-1])) < tolerance
-        assert abs(return_values[4] - np.mean(values)) < tolerance
-        assert abs(return_values[5] - np.std(values)) < tolerance
-        assert abs(return_values[6] - np.min(values)) < tolerance
-        assert abs(return_values[7] - np.max(values)) < tolerance
+def test_math_function_sum(args):
+    platform_idx, platform, device_idx, device = args
+    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
+    kernel_source = """
+    __kernel void test_kernel(__global const cdouble values[N],
+                              __global cdouble ret_value[1]) {
+        ret_value[0] = sum(values, N);
+        return;
+    }
+    """
+
+    # TODO: hardcode important tests
+    # e.g.: include a zero, have some negative numbers
+    # also check against fmax
+    for idx in range(10):
+        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
+        y_expected = np.sum(x, dtype=cdouble)
+        y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
+                                   platform_idx=platform_idx,
+                                   device_idx=device_idx,
+                                   read_only_arrays=[x],
+                                   write_only_shapes=[1],
+                                   kernel_name='test_kernel')[0][0]
+        #print(f'Sum [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        assert abs(y - y_expected) < tolerance
+    return
+
+
+def test_math_function_logsumexp(args):
+    platform_idx, platform, device_idx, device = args
+    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
+    kernel_source = """
+    __kernel void test_kernel(__global const cdouble values[N],
+                              __global cdouble ret_value[1]) {
+        ret_value[0] = logsumexp(values, N);
+        return;
+    }
+    """
+
+    # TODO: hardcode important tests
+    # also check against fmax
+    for idx in range(10):
+        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
+        y_expected = scipy.misc.logsumexp(x)
+        y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
+                                   platform_idx=platform_idx,
+                                   device_idx=device_idx,
+                                   read_only_arrays=[x],
+                                   write_only_shapes=[1],
+                                   kernel_name='test_kernel')[0][0]
+        #print(f'LogSumExp [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        assert abs(y - y_expected) < tolerance
+    return
+
+
+def test_math_function_logaddexp(args):
+    platform_idx, platform, device_idx, device = args
+    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
+    kernel_source = """
+    __kernel void test_kernel(__global const cdouble values[2],
+                              __global cdouble ret_value[1]) {
+        ret_value[0] = logaddexp(values[0], values[1]);
+        return;
+    }
+    """
+
+    # TODO: hardcode important tests
+    # also check against fmax
+    for idx in range(10):
+        x = np.random.uniform(1e-4, 1e4, 2).astype(cdouble)
+        y_expected = np.logaddexp(x[0], x[1])
+        y = gaps.direct_evaluation(kernel_source,
+                                   platform_idx=platform_idx,
+                                   device_idx=device_idx,
+                                   read_only_arrays=[x],
+                                   write_only_shapes=[1],
+                                   kernel_name='test_kernel')[0][0]
+        #print(f'LogAddExp [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        assert abs(y - y_expected) < tolerance
+    return
+
+
+def test_math_function_mean(args):
+    platform_idx, platform, device_idx, device = args
+    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
+    kernel_source = """
+    __kernel void test_kernel(__global const cdouble values[N],
+                              __global cdouble ret_value[1]) {
+        ret_value[0] = mean(values, N);
+        return;
+    }
+    """
+
+    # TODO: hardcode important tests
+    # also check against fmax
+    for idx in range(10):
+        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
+        y_expected = np.mean(x, dtype=cdouble)
+        y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
+                                   platform_idx=platform_idx,
+                                   device_idx=device_idx,
+                                   read_only_arrays=[x],
+                                   write_only_shapes=[1],
+                                   kernel_name='test_kernel')[0][0]
+        #print(f'Mean [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        assert abs(y - y_expected) < tolerance
+    return
+
+
+def test_math_function_stddev(args):
+    platform_idx, platform, device_idx, device = args
+    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
+    kernel_source = """
+    __kernel void test_kernel(__global const cdouble values[N],
+                              __global cdouble ret_value[1]) {
+        ret_value[0] = stddev(values, N);
+        return;
+    }
+    """
+
+    # TODO: hardcode important tests
+    # also check against fmax
+    for idx in range(10):
+        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
+        y_expected = np.std(x, dtype=cdouble)
+        y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
+                                   platform_idx=platform_idx,
+                                   device_idx=device_idx,
+                                   read_only_arrays=[x],
+                                   write_only_shapes=[1],
+                                   kernel_name='test_kernel')[0][0]
+        #print(f'StdDev [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        assert abs(y - y_expected) < tolerance
+    return
+
+
+def test_math_function_iter_min(args):
+    platform_idx, platform, device_idx, device = args
+    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
+    kernel_source = """
+    __kernel void test_kernel(__global const cdouble values[N],
+                              __global cdouble ret_value[1]) {
+        ret_value[0] = iter_min(values, N);
+        return;
+    }
+    """
+
+    # TODO: hardcode important tests
+    # also check against fmax
+    for idx in range(10):
+        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
+        y_expected = np.min(x)
+        y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
+                                   platform_idx=platform_idx,
+                                   device_idx=device_idx,
+                                   read_only_arrays=[x],
+                                   write_only_shapes=[1],
+                                   kernel_name='test_kernel')[0][0]
+        print(f'Min [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        assert abs(y - y_expected) < tolerance
+    return
+
+
+def test_math_function_iter_max(args):
+    platform_idx, platform, device_idx, device = args
+    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
+    kernel_source = """
+    __kernel void test_kernel(__global const cdouble values[N],
+                              __global cdouble ret_value[1]) {
+        ret_value[0] = iter_max(values, N);
+        return;
+    }
+    """
+
+    # TODO: hardcode important tests
+    # also check against fmax
+    for idx in range(10):
+        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
+        y_expected = np.max(x)
+        y = gaps.direct_evaluation(f'#define N {len(x)}' + kernel_source,
+                                   platform_idx=platform_idx,
+                                   device_idx=device_idx,
+                                   read_only_arrays=[x],
+                                   write_only_shapes=[1],
+                                   kernel_name='test_kernel')[0][0]
+        print(f'Max [{idx:>2}]: {y:>12.6f} vs. {y_expected:>12.6f} ({y-y_expected})')
+        assert abs(y - y_expected) < tolerance
+    return
+
+
+# %% Old Tests
 
 
 def test_gaussian_normed_pdf_values():
@@ -613,7 +773,19 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     for args in device_list:
-        test_math_function_results()
+        if (args[0], args[2]) != (0, 1):
+            continue
+        print(args[1].name, args[3].name, sep=' - ')
+        test_math_function_product(args)
+        test_math_function_sum(args)
+        test_math_function_logsumexp(args)
+        test_math_function_logaddexp(args)
+        test_math_function_mean(args)
+        test_math_function_stddev(args)
+        test_math_function_iter_min(args)
+        test_math_function_iter_max(args)
+
+    #    test_math_function_results()
     #    test_gaussian_normed_pdf_values()
     #    test_gaussian_normed_pdf_integral()
     #    test_log_gaussian_normed_pdf_values()
@@ -630,4 +802,4 @@ if __name__ == '__main__':
     #    test_power_law_falling_pdf_values()
     #    test_log_power_law_pdf_values()
     #    test_log_power_law_falling_pdf_values()
-    break
+        break

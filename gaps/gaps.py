@@ -47,8 +47,9 @@ def direct_evaluation(source_code, platform_idx=None, device_idx=None,
         `write_only_shapes`.
     """
     context, queue = create_context_and_queue(platform_idx, device_idx)
-    read_only_cpu = [np.array(x, dtype=cdouble) for x in read_only_arrays]
-    write_only_cpu = [np.empty(x, dtype=cdouble) for x in write_only_shapes]
+    dtype = cdouble(queue)
+    read_only_cpu = [np.array(x, dtype=dtype) for x in read_only_arrays]
+    write_only_cpu = [np.empty(x, dtype=dtype) for x in write_only_shapes]
     read_only_gpu = [create_read_buffer(context, x) for x in read_only_cpu]
     write_only_gpu = [create_write_buffer(context, x) for x in write_only_cpu]
     buffers = read_only_gpu + write_only_gpu

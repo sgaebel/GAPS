@@ -64,50 +64,6 @@ def compile_kernel(context, queue, source_code, function_name,
     return getattr(program, function_name)
 
 
-def memory_size(n_bytes, *, SI=False, template='{:.2f} {} ({} B)'):
-    """Converting a number of bytes into human readable units.
-
-    Copied from `shed`.
-
-    Parameters
-    ----------
-    n_bytes : int
-        Number of bytes.
-    SI : bool
-        Whether to use binary units (base 1024) or SI units
-        (base 1000). Keyword only argument. Default: False.
-    template : string
-        Template used to print the formatted memory size.
-        Default: '{:.2f} {} ({} B)'.
-
-    Returns
-    -------
-    value : string
-        Formatted string.
-    """
-    if n_bytes < 0:
-        raise ValueError('Memory sizes may not be negative: {!r}'
-                         ''.format(n_bytes))
-    if SI:
-        units = ['B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-        base = 1000
-    else:
-        units = ['B', 'kiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
-        base = 1024
-    *units, final_unit = units
-
-    if n_bytes < base:
-        return '{:.0f} B'.format(n_bytes)
-    n_units = n_bytes
-    for unit in units:
-        if n_units < base:
-            break
-        n_units /= base
-    else:
-        unit = final_unit
-    return template.format(n_units, unit, n_bytes)
-
-
 def create_context_and_queue(platform_idx=None, device_idx=None):
     """
     Convenience function to create the OpenCL context and queue needed
@@ -159,6 +115,50 @@ def create_context_and_queue(platform_idx=None, device_idx=None):
     queue = ocl.CommandQueue(context)
 
     return context, queue
+
+
+def memory_size(n_bytes, *, SI=False, template='{:.2f} {} ({} B)'):
+    """Converting a number of bytes into human readable units.
+
+    Copied from `shed`.
+
+    Parameters
+    ----------
+    n_bytes : int
+        Number of bytes.
+    SI : bool
+        Whether to use binary units (base 1024) or SI units
+        (base 1000). Keyword only argument. Default: False.
+    template : string
+        Template used to print the formatted memory size.
+        Default: '{:.2f} {} ({} B)'.
+
+    Returns
+    -------
+    value : string
+        Formatted string.
+    """
+    if n_bytes < 0:
+        raise ValueError('Memory sizes may not be negative: {!r}'
+                         ''.format(n_bytes))
+    if SI:
+        units = ['B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+        base = 1000
+    else:
+        units = ['B', 'kiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
+        base = 1024
+    *units, final_unit = units
+
+    if n_bytes < base:
+        return '{:.0f} B'.format(n_bytes)
+    n_units = n_bytes
+    for unit in units:
+        if n_units < base:
+            break
+        n_units /= base
+    else:
+        unit = final_unit
+    return template.format(n_units, unit, n_bytes)
 
 
 def print_devices(detail_level=0):

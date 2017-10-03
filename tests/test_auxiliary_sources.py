@@ -101,7 +101,7 @@ def test_math_function_sum(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Sum [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Sum [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -130,7 +130,7 @@ def test_math_function_product(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Product [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Product [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -158,7 +158,7 @@ def test_math_function_logsumexp(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('LogSumExp [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('LogSumExp [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -186,7 +186,7 @@ def test_math_function_logaddexp(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('LogAddExp [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('LogAddExp [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -214,7 +214,7 @@ def test_math_function_mean(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Mean [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Mean [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -242,7 +242,7 @@ def test_math_function_stddev(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('StdDev [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('StdDev [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -270,7 +270,7 @@ def test_math_function_iter_min(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Min [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Min [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -298,7 +298,7 @@ def test_math_function_iter_max(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Max [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Max [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -332,7 +332,7 @@ def test_gaussian(args):
                                    read_only_arrays=[values],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Gaussian [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Gaussian [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -364,7 +364,7 @@ def test_gaussian_normed(args):
                                    read_only_arrays=[values],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('GaussianNormed [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('GaussianNormed [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -396,7 +396,7 @@ def test_log_gaussian(args):
                                    read_only_arrays=[values],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('LogGaussian [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('LogGaussian [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -428,7 +428,7 @@ def test_log_gaussian_normed(args):
                                    read_only_arrays=[values],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('LogGaussianNormed [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('LogGaussianNormed [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -462,7 +462,7 @@ def test_trunc_gaussian(args):
                                    read_only_arrays=[values],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('TruncGaussian [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('TruncGaussian [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -497,12 +497,12 @@ def test_log_trunc_gaussian(args):
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
         if np.isinf(y_expected):
-            vprint('LogTruncGaussian [{:>2}]: {:>12.6e} vs. {:>12.6e}'
+            vprint('LogTruncGaussian [{:>2}]: {:>13.6e} vs. {:>13.6e}'
                    ''.format(idx, y, y_expected))
             assert np.isinf(y)
             assert y < 0
             continue
-        vprint('LogTruncGaussian [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('LogTruncGaussian [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -543,7 +543,7 @@ def test_power_law(args):
                                    read_only_arrays=[values],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('PowerLaw [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('PowerLaw [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -577,7 +577,7 @@ def test_power_law_falling(args):
                                    read_only_arrays=[values],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('PowerLawFalling [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('PowerLawFalling [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -620,12 +620,12 @@ def test_log_power_law(args):
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
         if np.isinf(y_expected):
-            vprint('LogPowerLaw [{:>2}]: {:>12.6e} vs. {:>12.6e}'
+            vprint('LogPowerLaw [{:>2}]: {:>13.6e} vs. {:>13.6e}'
                    ''.format(idx, y, y_expected))
             assert np.isinf(y)
             assert y < 0
             continue
-        vprint('LogPowerLaw [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('LogPowerLaw [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -660,12 +660,12 @@ def test_log_power_law_falling(args):
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
         if np.isinf(y_expected):
-            vprint('LogPowerLawFalling [{:>2}]: {:>12.6e} vs. {:>12.6e}'
+            vprint('LogPowerLawFalling [{:>2}]: {:>13.6e} vs. {:>13.6e}'
                    ''.format(idx, y, y_expected))
             assert np.isinf(y)
             assert y < 0
             continue
-        vprint('LogPowerLawFalling [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('LogPowerLawFalling [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -700,7 +700,7 @@ def test_gaussian_normed_integral(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -733,7 +733,7 @@ def test_log_gaussian_normed_integral(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -766,7 +766,7 @@ def test_trunc_gaussian_integral(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -799,7 +799,7 @@ def test_log_trunc_gaussian_integral(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -832,7 +832,7 @@ def test_power_law_integral(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -865,7 +865,7 @@ def test_power_law_falling_integral(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -898,7 +898,7 @@ def test_log_power_law_integral(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -931,7 +931,7 @@ def test_log_power_law_falling_integral(args):
                                    read_only_arrays=[x],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>12.6e} vs. {:>12.6e} ({})'
+        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return

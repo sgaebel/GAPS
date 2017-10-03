@@ -27,7 +27,9 @@ math_constants = """
 #define M_LOG_1_SQRT2PI -0.91893853320467267
 #define M_SQRT_2_PI 0.79788456080286541
 #define M_LOG_SQRT_2_PI -0.22579135264472738
-#define M_SQRT1_2 0.70710678118654757
+#ifndef M_SQRT1_2
+    #define M_SQRT1_2 0.70710678118654757
+#endif
 """
 
 
@@ -163,10 +165,10 @@ cdouble log_trunc_gaussian(const cdouble value, const cdouble mean, const cdoubl
 
 power_law_templates = """
 cdouble power_law(const cdouble value, const cdouble slope, const cdouble low, const cdouble high) {
-    if(value < low || value > high) {
+    if((value < low) || (value > high)) {
         return 0.;
     }
-    if(slope == -1.) {
+    else if(slope == -1.) {
         return 1. / (value * (log(high) - log(low)));
     }
     return pow(value, slope) * (1.+slope) / (pow(high, 1.+slope) - pow(low, 1.+slope));
@@ -180,11 +182,11 @@ cdouble power_law_falling(const cdouble value, const cdouble slope, const cdoubl
 }
 
 cdouble log_power_law(const cdouble value, const cdouble slope, const cdouble low, const cdouble high) {
-    if(value < low || value > high) {
+    if((value < low) || (value > high)) {
         return -INFINITY;
     }
-    if(slope == -1.) {
-        return -log(value - log(log(high) - log(low)));
+    else if(slope == -1.) {
+        return -log(value) - log(log(high) - log(low));
     }
     else if(slope < -1.) {
         return log(-1.-slope) + slope * log(value) - log(pow(low, 1.+slope) - pow(high, 1.+slope));

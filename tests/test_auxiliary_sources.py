@@ -1018,843 +1018,426 @@ def test_log_power_law_falling_integral(args):
 # %% Virual confirmation for distribution shapes
 
 def visual_gaussian(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_values[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_values[i] = gaussian(values[i], meanval, sigmaval);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    some_args = (parameter1, parameter2, x_value, y_value)
-    x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-    y_expected = np.max(x)
+    mean = np.random.uniform(-256, 256)
+    sigma = 10**np.random.uniform(-2, 2)
+    minval = mean - (3*sigma * np.random.uniform(0.75, 1.5))
+    maxval = mean + (3*sigma * np.random.uniform(0.75, 1.5))
+    x = np.linspace(minval, maxval, 720)
+    y_expected = scipy.stats.norm.pdf(x, loc=mean, scale=sigma) * (sigma * np.sqrt(2*np.pi))
     defines = """
-    #define N {len(x)}
-    """.format()
+    #define N {}
+    #define meanval {}
+    #define sigmaval {}
+    """.format(len(x), mean, sigma)
     y = gaps.direct_evaluation(defines + kernel_source,
                                platform_idx=platform_idx,
                                device_idx=device_idx,
                                read_only_arrays=[x],
-                               write_only_shapes=[1],
-                               kernel_name='test_kernel')[0][0]
+                               write_only_shapes=[len(x)],
+                               kernel_name='test_kernel')[0]
     plt.figure()
     plt.plot(x, y, label='GAPS')
-    plt.plot(x, y_expected, ':', label='Scipy')
+    plt.plot(x, y_expected, '--', label='Scipy')
     plt.legend()
-    plt.title('Something about what we expected and the float type')
+    plt.title('Gaussian\nMean={:.2}, Sigma={:.2}'.format(mean, sigma))
     plt.tight_layout()
     return
 
 
 def visual_gaussian_normed(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_values[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_values[i] = gaussian_normed(values[i], meanval, sigmaval);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    some_args = (parameter1, parameter2, x_value, y_value)
-    x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-    y_expected = np.max(x)
+    mean = np.random.uniform(-256, 256)
+    sigma = 10**np.random.uniform(-2, 2)
+    minval = mean - (3*sigma * np.random.uniform(0.75, 1.5))
+    maxval = mean + (3*sigma * np.random.uniform(0.75, 1.5))
+    x = np.linspace(minval, maxval, 720)
+    y_expected = scipy.stats.norm.pdf(x, loc=mean, scale=sigma)
     defines = """
-    #define N {len(x)}
-    """.format()
+    #define N {}
+    #define meanval {}
+    #define sigmaval {}
+    """.format(len(x), mean, sigma)
     y = gaps.direct_evaluation(defines + kernel_source,
                                platform_idx=platform_idx,
                                device_idx=device_idx,
                                read_only_arrays=[x],
-                               write_only_shapes=[1],
-                               kernel_name='test_kernel')[0][0]
+                               write_only_shapes=[len(x)],
+                               kernel_name='test_kernel')[0]
     plt.figure()
     plt.plot(x, y, label='GAPS')
-    plt.plot(x, y_expected, ':', label='Scipy')
+    plt.plot(x, y_expected, '--', label='Scipy')
     plt.legend()
-    plt.title('Something about what we expected and the float type')
+    plt.title('GaussianNormed\nMean={:.2}, Sigma={:.2}'.format(mean, sigma))
     plt.tight_layout()
     return
 
 
 def visual_log_gaussian(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_values[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_values[i] = log_gaussian(values[i], meanval, sigmaval);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    some_args = (parameter1, parameter2, x_value, y_value)
-    x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-    y_expected = np.max(x)
+    mean = np.random.uniform(-256, 256)
+    sigma = 10**np.random.uniform(-2, 2)
+    minval = mean - (3*sigma * np.random.uniform(0.75, 1.5))
+    maxval = mean + (3*sigma * np.random.uniform(0.75, 1.5))
+    x = np.linspace(minval, maxval, 720)
+    y_expected = scipy.stats.norm.logpdf(x, loc=mean, scale=sigma) + np.log(sigma) + 0.5 * np.log(2*np.pi)
     defines = """
-    #define N {len(x)}
-    """.format()
+    #define N {}
+    #define meanval {}
+    #define sigmaval {}
+    """.format(len(x), mean, sigma)
     y = gaps.direct_evaluation(defines + kernel_source,
                                platform_idx=platform_idx,
                                device_idx=device_idx,
                                read_only_arrays=[x],
-                               write_only_shapes=[1],
-                               kernel_name='test_kernel')[0][0]
+                               write_only_shapes=[len(x)],
+                               kernel_name='test_kernel')[0]
     plt.figure()
     plt.plot(x, y, label='GAPS')
-    plt.plot(x, y_expected, ':', label='Scipy')
+    plt.plot(x, y_expected, '--', label='Scipy')
     plt.legend()
-    plt.title('Something about what we expected and the float type')
+    plt.title('LogGaussian\nMean={:.2}, Sigma={:.2}'.format(mean, sigma))
     plt.tight_layout()
     return
 
 
 def visual_log_gaussian_normed(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_values[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_values[i] = log_gaussian_normed(values[i], meanval, sigmaval);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    some_args = (parameter1, parameter2, x_value, y_value)
-    x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-    y_expected = np.max(x)
+    mean = np.random.uniform(-256, 256)
+    sigma = 10**np.random.uniform(-2, 2)
+    minval = mean - (3*sigma * np.random.uniform(0.75, 1.5))
+    maxval = mean + (3*sigma * np.random.uniform(0.75, 1.5))
+    x = np.linspace(minval, maxval, 720)
+    y_expected = scipy.stats.norm.logpdf(x, loc=mean, scale=sigma)
     defines = """
-    #define N {len(x)}
-    """.format()
+    #define N {}
+    #define meanval {}
+    #define sigmaval {}
+    """.format(len(x), mean, sigma)
     y = gaps.direct_evaluation(defines + kernel_source,
                                platform_idx=platform_idx,
                                device_idx=device_idx,
                                read_only_arrays=[x],
-                               write_only_shapes=[1],
-                               kernel_name='test_kernel')[0][0]
+                               write_only_shapes=[len(x)],
+                               kernel_name='test_kernel')[0]
     plt.figure()
     plt.plot(x, y, label='GAPS')
-    plt.plot(x, y_expected, ':', label='Scipy')
+    plt.plot(x, y_expected, '--', label='Scipy')
     plt.legend()
-    plt.title('Something about what we expected and the float type')
+    plt.title('LogGaussianNormed\nMean={:.2}, Sigma={:.2}'.format(mean, sigma))
     plt.tight_layout()
     return
 
 
 def visual_trunc_gaussian(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_values[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_values[i] = trunc_gaussian(values[i], meanval, sigmaval, low, high);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    some_args = (parameter1, parameter2, x_value, y_value)
-    x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-    y_expected = np.max(x)
+    mean = np.random.uniform(-256, 256)
+    sigma = 10**np.random.uniform(-2, 2)
+    minval = mean - (3*sigma * np.random.uniform(0.75, 1.5))
+    maxval = mean + (3*sigma * np.random.uniform(0.75, 1.5))
+    low = np.random.uniform(minval, mean)
+    high = np.random.uniform(mean, maxval)
+    x = np.linspace(minval, maxval, 720)
+    a, b = (low - mean) / sigma, (high - mean) / sigma
+    y_expected = scipy.stats.truncnorm.pdf(x, a, b, mean, sigma)
     defines = """
-    #define N {len(x)}
-    """.format()
+    #define N {}
+    #define meanval {}
+    #define sigmaval {}
+    #define low {}
+    #define high {}
+    """.format(len(x), mean, sigma, low, high)
     y = gaps.direct_evaluation(defines + kernel_source,
                                platform_idx=platform_idx,
                                device_idx=device_idx,
                                read_only_arrays=[x],
-                               write_only_shapes=[1],
-                               kernel_name='test_kernel')[0][0]
+                               write_only_shapes=[len(x)],
+                               kernel_name='test_kernel')[0]
     plt.figure()
     plt.plot(x, y, label='GAPS')
-    plt.plot(x, y_expected, ':', label='Scipy')
+    plt.plot(x, y_expected, '--', label='Scipy')
     plt.legend()
-    plt.title('Something about what we expected and the float type')
+    plt.title('TruncGaussian\nMean={:.2}, Sigma={:.2}\nLow={:.2}, High={:.2}'
+              ''.format(mean, sigma, low, high))
     plt.tight_layout()
     return
 
 
 def visual_log_trunc_gaussian(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_values[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_values[i] = log_trunc_gaussian(values[i], meanval, sigmaval, low, high);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    some_args = (parameter1, parameter2, x_value, y_value)
-    x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-    y_expected = np.max(x)
+    mean = np.random.uniform(-256, 256)
+    sigma = 10**np.random.uniform(-2, 2)
+    minval = mean - (3*sigma * np.random.uniform(0.75, 1.5))
+    maxval = mean + (3*sigma * np.random.uniform(0.75, 1.5))
+    low = np.random.uniform(minval, mean)
+    high = np.random.uniform(mean, maxval)
+    x = np.linspace(minval, maxval, 720)
+    a, b = (low - mean) / sigma, (high - mean) / sigma
+    y_expected = scipy.stats.truncnorm.logpdf(x, a, b, mean, sigma)
     defines = """
-    #define N {len(x)}
-    """.format()
+    #define N {}
+    #define meanval {}
+    #define sigmaval {}
+    #define low {}
+    #define high {}
+    """.format(len(x), mean, sigma, low, high)
     y = gaps.direct_evaluation(defines + kernel_source,
                                platform_idx=platform_idx,
                                device_idx=device_idx,
                                read_only_arrays=[x],
-                               write_only_shapes=[1],
-                               kernel_name='test_kernel')[0][0]
+                               write_only_shapes=[len(x)],
+                               kernel_name='test_kernel')[0]
+    # At this point we replace the negative infinities with a small
+    # but constant value, while not so small to completely distort
+    # the plot.
+    y[np.isinf(y)] = 1.5*np.min(y[~np.isinf(y)])
+    y_expected[np.isinf(y_expected)] = 1.5*np.min(y_expected[~np.isinf(y_expected)])
+
     plt.figure()
     plt.plot(x, y, label='GAPS')
-    plt.plot(x, y_expected, ':', label='Scipy')
+    plt.plot(x, y_expected, '--', label='Scipy')
     plt.legend()
-    plt.title('Something about what we expected and the float type')
+    plt.title('LogTruncGaussian\nMean={:.2}, Sigma={:.2}\nLow={:.2}, High={:.2}'
+              ''.format(mean, sigma, low, high))
     plt.tight_layout()
     return
 
 
 def visual_power_law(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_values[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_values[i] = power_law(values[i], slope, low, high);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    some_args = (parameter1, parameter2, x_value, y_value)
-    x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-    y_expected = np.max(x)
+    slope = np.random.uniform(-2, 3)
+    minval = 10**np.random.uniform(-3, 3)
+    maxval = minval * np.random.uniform(2160, 4096)
+    low = minval * np.random.uniform(1, 1.2)
+    high = maxval * np.random.uniform(0.8, 1)
+    x = np.linspace(minval, maxval, 7200)
+    y_expected = x**slope * (slope+1) / (high**(slope+1) - low**(slope+1))
+    y_expected[np.logical_or(x < low, x > high)] = 0
     defines = """
-    #define N {len(x)}
-    """.format()
+    #define N {}
+    #define slope {}
+    #define low {}
+    #define high {}
+    """.format(len(x), slope, low, high)
     y = gaps.direct_evaluation(defines + kernel_source,
                                platform_idx=platform_idx,
                                device_idx=device_idx,
                                read_only_arrays=[x],
-                               write_only_shapes=[1],
-                               kernel_name='test_kernel')[0][0]
+                               write_only_shapes=[len(x)],
+                               kernel_name='test_kernel')[0]
     plt.figure()
-    plt.plot(x, y, label='GAPS')
-    plt.plot(x, y_expected, ':', label='Scipy')
+    plt.loglog(x, y, label='GAPS')
+    plt.loglog(x, y_expected, '--', label='Python')
+    plt.grid()
     plt.legend()
-    plt.title('Something about what we expected and the float type')
+    plt.title('PowerLaw\nSlope={:.2}\nLow={:.2}, High={:.2}'
+              ''.format(slope, low, high))
     plt.tight_layout()
     return
 
 
 def visual_power_law_falling(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_values[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_values[i] = power_law_falling(values[i], slope, low);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    some_args = (parameter1, parameter2, x_value, y_value)
-    x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-    y_expected = np.max(x)
+    slope = np.random.uniform(-3, -1)
+    minval = 10**np.random.uniform(-3, 3)
+    maxval = minval * np.random.uniform(2160, 4096)
+    low = minval * np.random.uniform(1, 1.2)
+    x = np.linspace(minval, maxval, 7200)
+    y_expected = x**slope * (-slope-1) / low**(slope+1)
+    y_expected[x < low] = 0
     defines = """
-    #define N {len(x)}
-    """.format()
+    #define N {}
+    #define slope {}
+    #define low {}
+    """.format(len(x), slope, low)
     y = gaps.direct_evaluation(defines + kernel_source,
                                platform_idx=platform_idx,
                                device_idx=device_idx,
                                read_only_arrays=[x],
-                               write_only_shapes=[1],
-                               kernel_name='test_kernel')[0][0]
+                               write_only_shapes=[len(x)],
+                               kernel_name='test_kernel')[0]
     plt.figure()
-    plt.plot(x, y, label='GAPS')
-    plt.plot(x, y_expected, ':', label='Scipy')
+    plt.loglog(x, y, label='GAPS')
+    plt.loglog(x, y_expected, '--', label='Python')
+    plt.grid()
     plt.legend()
-    plt.title('Something about what we expected and the float type')
+    plt.title('PowerLawFalling\nSlope={:.2}, Low={:.2}'.format(slope, low))
     plt.tight_layout()
     return
 
 
 def visual_log_power_law(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_values[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_values[i] = log_power_law(values[i], slope, low, high);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    some_args = (parameter1, parameter2, x_value, y_value)
-    x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-    y_expected = np.max(x)
+    slope = np.random.uniform(-2, 3)
+    minval = 10**np.random.uniform(-3, 3)
+    maxval = minval * np.random.uniform(2160, 4096)
+    low = minval * np.random.uniform(1, 1.2)
+    high = maxval * np.random.uniform(0.8, 1)
+    x = np.linspace(minval, maxval, 7200)
+    y_expected = np.log(x**slope * (slope+1) / (high**(slope+1) - low**(slope+1)))
+    y_expected[np.logical_or(x < low, x > high)] = -np.inf
     defines = """
-    #define N {len(x)}
-    """.format()
+    #define N {}
+    #define slope {}
+    #define low {}
+    #define high {}
+    """.format(len(x), slope, low, high)
     y = gaps.direct_evaluation(defines + kernel_source,
                                platform_idx=platform_idx,
                                device_idx=device_idx,
                                read_only_arrays=[x],
-                               write_only_shapes=[1],
-                               kernel_name='test_kernel')[0][0]
+                               write_only_shapes=[len(x)],
+                               kernel_name='test_kernel')[0]
     plt.figure()
-    plt.plot(x, y, label='GAPS')
-    plt.plot(x, y_expected, ':', label='Scipy')
+    plt.semilogx(x, y, label='GAPS')
+    plt.semilogx(x, y_expected, '--', label='Python')
+    plt.grid()
     plt.legend()
-    plt.title('Something about what we expected and the float type')
+    plt.title('LogPowerLaw (base e)\nSlope={:.2}\nLow={:.2}, High={:.2}'
+              ''.format(slope, low, high))
     plt.tight_layout()
     return
 
 
 def visual_log_power_law_falling(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_values[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_values[i] = log_power_law_falling(values[i], slope, low);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    some_args = (parameter1, parameter2, x_value, y_value)
-    x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-    y_expected = np.max(x)
+    slope = np.random.uniform(-3, -1)
+    minval = 10**np.random.uniform(-3, 3)
+    maxval = minval * np.random.uniform(2160, 4096)
+    low = minval * np.random.uniform(1, 1.2)
+    x = np.linspace(minval, maxval, 7200)
+    y_expected = slope*np.log(x) + np.log(-slope-1) - (slope+1)*np.log(low)
+    y_expected[x < low] = -np.inf
     defines = """
-    #define N {len(x)}
-    """.format()
+    #define N {}
+    #define slope {}
+    #define low {}
+    """.format(len(x), slope, low)
     y = gaps.direct_evaluation(defines + kernel_source,
                                platform_idx=platform_idx,
                                device_idx=device_idx,
                                read_only_arrays=[x],
-                               write_only_shapes=[1],
-                               kernel_name='test_kernel')[0][0]
+                               write_only_shapes=[len(x)],
+                               kernel_name='test_kernel')[0]
     plt.figure()
-    plt.plot(x, y, label='GAPS')
-    plt.plot(x, y_expected, ':', label='Scipy')
+    plt.semilogx(x, y, label='GAPS')
+    plt.semilogx(x, y_expected, '--', label='Python')
+    plt.grid()
     plt.legend()
-    plt.title('Something about what we expected and the float type')
+    plt.title('LogPowerLawFalling (base e)\nSlope={:.2}\nLow={:.2}'
+              ''.format(slope, low))
     plt.tight_layout()
     return
-
-
-
-
-
-
-# %% Old Tests
-
-
-def test_gaussian_normed_pdf_values():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        mean = np.random.uniform(-100, 100)
-        sigma = 10**np.random.uniform(-2, 2)
-        low = mean - sigma * np.random.uniform(5, 6)
-        high = mean + sigma * np.random.uniform(5, 6)
-        x = np.linspace(low, high, num=6400)
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define meanvalue {}
-        #define sigmavalue {}""".format(len(x), mean, sigma)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = gaussian_normed(x[i], meanvalue, sigmavalue);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-        y_expected = scipy.stats.norm.pdf(x, mean, sigma)
-        if VISUAL:
-            plt.figure()
-            plt.plot(x, y, label='GAPS')
-            plt.plot(x, y_expected, ':', label='Scipy')
-            plt.legend()
-            plt.title('test_gaussian_normed_pdf_values\n({}.{}), {}'
-                      ''.format(platform_idx, device_idx, cdouble))
-            plt.tight_layout()
-            plt.show()
-        assert np.all(np.abs(y_expected - y) < tolerance)
-
-
-
-
-def test_gaussian_normed_pdf_integral():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        mean = np.random.uniform(-100, 100)
-        sigma = 10**np.random.uniform(-2, 2)
-        low = mean - sigma * np.random.uniform(5, 6)
-        high = mean + sigma * np.random.uniform(5, 6)
-        x = np.linspace(low, high, num=6400)
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define meanvalue {}
-        #define sigmavalue {}""".format(len(x), mean, sigma)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = gaussian_normed(x[i], meanvalue, sigmavalue);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-        y_expected = scipy.stats.norm.pdf(x, mean, sigma)
-        assert abs(scipy.integrate.trapz(y, x) - 1) < 100*tolerance
-        assert abs(scipy.integrate.trapz(y_expected, x) - 1) < 100*tolerance
-
-
-def test_log_gaussian_normed_pdf_values():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        mean = np.random.uniform(-100, 100)
-        sigma = 10**np.random.uniform(-2, 2)
-        low = mean - sigma * np.random.uniform(5, 6)
-        high = mean + sigma * np.random.uniform(5, 6)
-        x = np.linspace(low, high, num=6400)
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define meanvalue {}
-        #define sigmavalue {}""".format(len(x), mean, sigma)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = log_gaussian_normed(x[i], meanvalue, sigmavalue);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-        y_expected = scipy.stats.norm.logpdf(x, mean, sigma)
-        if VISUAL:
-            plt.figure()
-            plt.plot(x, y, label='GAPS')
-            plt.plot(x, y_expected, ':', label='Scipy')
-            plt.legend()
-            plt.title('test_log_gaussian_normed_pdf_values\n({}.{}), {}'
-                      ''.format(platform_idx, device_idx, cdouble))
-            plt.tight_layout()
-            plt.show()
-        assert np.all(np.abs(y - y_expected) < tolerance)
-
-
-def test_gaussian_pdf_values():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        mean = np.random.uniform(-100, 100)
-        sigma = 10**np.random.uniform(-2, 2)
-        low = mean - sigma * np.random.uniform(5, 6)
-        high = mean + sigma * np.random.uniform(5, 6)
-        x = np.linspace(low, high, num=6400)
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define meanvalue {}
-        #define sigmavalue {}""".format(len(x), mean, sigma)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = gaussian(x[i], meanvalue, sigmavalue);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-        y_expected = scipy.stats.norm.pdf(x, mean, sigma)
-        if VISUAL:
-            plt.figure()
-            plt.plot(x, y, label='GAPS')
-            plt.plot(x, y_expected, ':', label='Scipy')
-            plt.legend()
-            plt.title('test_gaussian_pdf_values\n({}.{}), {}'
-                      ''.format(platform_idx, device_idx, cdouble))
-            plt.tight_layout()
-            plt.show()
-        assert np.std(y / y_expected) < tolerance
-
-
-def test_log_gaussian_pdf_values():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        mean = np.random.uniform(-100, 100)
-        sigma = 10**np.random.uniform(-2, 2)
-        low = mean - sigma * np.random.uniform(5, 6)
-        high = mean + sigma * np.random.uniform(5, 6)
-        x = np.linspace(low, high, num=6400)
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define meanvalue {}
-        #define sigmavalue {}""".format(len(x), mean, sigma)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = log_gaussian(x[i], meanvalue, sigmavalue);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-        y_expected = scipy.stats.norm.logpdf(x, mean, sigma)
-        if VISUAL:
-            plt.figure()
-            plt.plot(x, y, label='GAPS')
-            plt.plot(x, y_expected, ':', label='Scipy')
-            plt.legend()
-            plt.title('test_log_gaussian_pdf_values\n({}.{}), {}'
-                      ''.format(platform_idx, device_idx, cdouble))
-            plt.tight_layout()
-            plt.show()
-        # Instead of checking the values directly, check that the offset
-        # between normed and unnormed is very close to constant.
-        assert np.std(np.abs(y - y_expected)) < tolerance
-
-
-def test_trunc_gaussian_pdf_values():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        mean = np.random.uniform(-100, 100)
-        sigma = 10**np.random.uniform(-2, 2)
-        low = mean - sigma * np.random.uniform(5, 6)
-        high = mean + sigma * np.random.uniform(5, 6)
-        x = np.linspace(low, high, num=6400)
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define meanvalue {}
-        #define sigmavalue {}
-        #define low {}
-        #define high {}""".format(len(x), mean, sigma, low, high)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = trunc_gaussian(x[i], meanvalue, sigmavalue, low, high);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-
-        a, b = (low - mean) / sigma, (high - mean) / sigma
-        y_expected = scipy.stats.truncnorm.pdf(x, a, b, mean, sigma)
-        if VISUAL:
-            plt.figure()
-            plt.plot(x, y, label='GAPS')
-            plt.plot(x, y_expected, ':', label='Scipy')
-            plt.legend()
-            plt.title('test_gaussian_pdf_values\n({}.{}), {}'
-                      ''.format(platform_idx, device_idx, cdouble))
-            plt.tight_layout()
-            plt.show()
-            print(mean, sigma, low, high)
-        assert np.std(y / y_expected) < tolerance
-
-
-def test_trunc_gaussian_pdf_integral():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        mean = np.random.uniform(-100, 100)
-        sigma = 10**np.random.uniform(-2, 2)
-        low = mean - sigma * np.random.uniform(5, 6)
-        high = mean + sigma * np.random.uniform(5, 6)
-        x = np.linspace(low, high, num=6400)
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define meanvalue {}
-        #define sigmavalue {}
-        #define low {}
-        #define high {}""".format(len(x), mean, sigma, low, high)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = trunc_gaussian(x[i], meanvalue, sigmavalue, low, high);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-
-        a, b = (low - mean) / sigma, (high - mean) / sigma
-        y_expected = scipy.stats.truncnorm.pdf(x, a, b, loc=mean, scale=sigma)
-        assert abs(scipy.integrate.trapz(y, x) - 1) < 100*tolerance
-        assert abs(scipy.integrate.trapz(y_expected, x) - 1) < 100*tolerance
-
-
-def test_log_trunc_gaussian_pdf_values():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        mean = np.random.uniform(-100, 100)
-        sigma = 10**np.random.uniform(-2, 2)
-        low = mean - sigma * np.random.uniform(5, 6)
-        high = mean + sigma * np.random.uniform(5, 6)
-        x = np.linspace(low, high, num=6400)
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define meanvalue {}
-        #define sigmavalue {}
-        #define low {}
-        #define high {}""".format(len(x), mean, sigma, low, high)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = log_trunc_gaussian(x[i], meanvalue, sigmavalue, low, high);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-
-        a, b = (low - mean) / sigma, (high - mean) / sigma
-        y_expected = scipy.stats.truncnorm.logpdf(x, a, b, loc=mean, scale=sigma)
-        if VISUAL:
-            plt.figure()
-            plt.plot(x, y, label='GAPS')
-            plt.plot(x, y_expected, ':', label='Scipy')
-            plt.legend()
-            plt.title('test_log_gaussian_pdf_values\n({}.{}), {}'
-                      ''.format(platform_idx, device_idx, cdouble))
-            plt.tight_layout()
-            plt.show()
-        # Instead of checking the values directly, check that the offset
-        # between normed and unnormed is very close to constant.
-        assert np.std(np.abs(y - y_expected)) < tolerance
-
-
-def test_power_law_pdf_values():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        slope = np.random.uniform(-3, 3)
-        low, high = sorted(10**np.random.uniform(-5, 5, 2))
-        x = np.linspace(low, high, num=6400)
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define slope {}
-        #define low {}
-        #define high {}""".format(len(x), slope, low, high)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = power_law(x[i], slope, low, high);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-        y_expected = x**slope * (slope+1) / (high**(slope+1) - low**(slope+1))
-        # Instead of checking the values directly, check that the offset
-        # between normed and unnormed is very close to constant.
-        if VISUAL:
-            plt.figure()
-            plt.loglog(x, y, label='GAPS')
-            plt.loglog(x, y_expected, ':', label='Scipy')
-            plt.grid()
-            plt.legend()
-            plt.title('test_power_law_pdf_values\n({}.{}), {}, $\\alpha$ = {:.2f}'
-                      ''.format(platform_idx, device_idx, cdouble, slope))
-            plt.tight_layout()
-            plt.show()
-        assert np.all(np.abs(y - y_expected) < tolerance)
-
-
-def test_power_law_pdf_integral():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        slope = np.random.uniform(-3, 3)
-        low, high = sorted(10**np.random.uniform(-5, 5, 2))
-        x = np.exp(np.linspace(np.log(low), np.log(high), num=6400))
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define slope {}
-        #define low {}
-        #define high {}""".format(len(x), slope, low, high)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = power_law(x[i], slope, low, high);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-        y_expected = x**slope * (slope+1) / (high**(slope+1) - low**(slope+1))
-        assert abs(scipy.integrate.trapz(y, x) - 1) < 100*tolerance
-        assert abs(scipy.integrate.trapz(y_expected, x) - 1) < 100*tolerance
-
-
-def test_power_law_falling_pdf_values():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        slope = np.random.uniform(-5, -1.0001)
-        low = 10**np.random.uniform(-5, 5)
-        high = np.inf
-        x = 10**np.linspace(np.log10(low), 12, num=6400)
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define slope {}
-        #define low {}""".format(len(x), slope, low)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = power_law_falling(x[i], slope, low);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-        y_expected = x**slope * (slope+1) / (high**(slope+1) - low**(slope+1))
-        # Instead of checking the values directly, check that the offset
-        # between normed and unnormed is very close to constant.
-        if VISUAL:
-            plt.figure()
-            plt.loglog(x, y, label='GAPS')
-            plt.loglog(x, y_expected, ':', label='Scipy')
-            plt.grid()
-            plt.legend()
-            plt.title('test_power_law_falling_pdf_values\n({}.{}), {}, $\\alpha$ = {:.2f}'
-                      ''.format(platform_idx, device_idx, cdouble, slope))
-            plt.tight_layout()
-            plt.show()
-        assert np.all((np.abs(y - y_expected)) < tolerance)
-
-
-def test_log_power_law_pdf_values():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        slope = np.random.uniform(-3, 3)
-        low, high = sorted(10**np.random.uniform(-5, 5, 2))
-        x = np.linspace(low, high, num=6400)
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define slope {}
-        #define low {}
-        #define high {}""".format(len(x), slope, low, high)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = log_power_law(x[i], slope, low, high);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-        y_expected = np.log(x**slope * (slope+1) / (high**(slope+1) - low**(slope+1)))
-        # Instead of checking the values directly, check that the offset
-        # between normed and unnormed is very close to constant.
-        if VISUAL:
-            plt.figure()
-            plt.semilogx(x, y, label='GAPS')
-            plt.semilogx(x, y_expected, ':', label='Scipy')
-            plt.grid()
-            plt.legend()
-            plt.title('test_power_law_pdf_values\n({}.{}), {}, $\\alpha$ = {:.2f}'
-                      ''.format(platform_idx, device_idx, cdouble, slope))
-            plt.tight_layout()
-            plt.show()
-        assert np.all(np.abs(y - y_expected) < tolerance)
-
-
-def test_log_power_law_falling_pdf_values():
-    for platform_idx, device_idx in device_iterator():
-        cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-        slope = np.random.uniform(-5, -1.0001)
-        low = 10**np.random.uniform(-5, 5)
-        high = np.inf
-        x = 10**np.linspace(np.log10(low), 12, num=6400)
-        y = np.empty_like(x)
-        defines = """
-        #define N_VALUES {}
-        #define slope {}
-        #define low {}""".format(len(x), slope, low)
-        kernel_source = """
-        __kernel void test_function(__global const cdouble x[N_VALUES],
-                                    __global cdouble y[N_VALUES]) {
-            for(size_t i = 0; i < N_VALUES; i++) {
-                y[i] = log_power_law_falling(x[i], slope, low);
-            }
-        }
-        """
-        source_code = defines + kernel_source
-        y = direct_evaluation(platform_idx, device_idx, source_code,
-                              read_only=[x], write_only=[y])[0]
-        y_expected = np.log(x**slope * (slope+1) / (high**(slope+1) - low**(slope+1)))
-        # Instead of checking the values directly, check that the offset
-        # between normed and unnormed is very close to constant.
-        if VISUAL:
-            plt.figure()
-            plt.semilogx(x, y, label='GAPS')
-            plt.semilogx(x, y_expected, ':', label='Scipy')
-            plt.grid()
-            plt.legend()
-            plt.title('test_power_law_falling_pdf_values\n({}.{}), {}, $\\alpha$ = {:.2f}'
-                      ''.format(platform_idx, device_idx, cdouble, slope))
-            plt.tight_layout()
-            plt.show()
-        assert np.all(np.abs(y - y_expected) < tolerance)
 
 
 if __name__ == '__main__':
@@ -1885,14 +1468,14 @@ if __name__ == '__main__':
 #        test_log_power_law(args)
 #        test_log_power_law_falling(args)
 
-        test_gaussian_normed_integral(args)
-        test_log_gaussian_normed_integral(args)
-        test_trunc_gaussian_integral(args)
-        test_log_trunc_gaussian_integral(args)
-        test_power_law_integral(args)
-        test_power_law_falling_integral(args)
-        test_log_power_law_integral(args)
-        test_log_power_law_falling_integral(args)
+#        test_gaussian_normed_integral(args)
+#        test_log_gaussian_normed_integral(args)
+#        test_trunc_gaussian_integral(args)
+#        test_log_trunc_gaussian_integral(args)
+#        test_power_law_integral(args)
+#        test_power_law_falling_integral(args)
+#        test_log_power_law_integral(args)
+#        test_log_power_law_falling_integral(args)
 
 #        visual_gaussian(args)
 #        visual_gaussian_normed(args)
@@ -1900,30 +1483,9 @@ if __name__ == '__main__':
 #        visual_log_gaussian_normed(args)
 #        visual_trunc_gaussian(args)
 #        visual_log_trunc_gaussian(args)
-#        visual_power_law(args)
-#        visual_power_law_falling(args)
-#        visual_log_power_law(args)
-#        visual_log_power_law_falling(args)
+        visual_power_law(args)
+        visual_power_law_falling(args)
+        visual_log_power_law(args)
+        visual_log_power_law_falling(args)
 
-
-
-
-
-    #    test_math_function_results()
-    #    test_gaussian_normed_pdf_values()
-    #    test_gaussian_normed_pdf_integral()
-    #    test_log_gaussian_normed_pdf_values()
-    #    test_gaussian_pdf_values()
-    #    test_log_gaussian_pdf_values()
-    #    test_trunc_gaussian_pdf_values()
-    #    test_trunc_gaussian_pdf_integral()
-    #    test_log_trunc_gaussian_pdf_values()
-    #    test_trunc_gaussian_pdf_values()
-    #    test_trunc_gaussian_pdf_integral()
-    #    test_log_trunc_gaussian_pdf_values()
-    #    test_power_law_pdf_values()
-    #    test_power_law_pdf_integral()
-    #    test_power_law_falling_pdf_values()
-    #    test_log_power_law_pdf_values()
-    #    test_log_power_law_falling_pdf_values()
         break

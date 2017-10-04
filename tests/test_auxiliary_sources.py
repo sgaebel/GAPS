@@ -674,266 +674,344 @@ def test_log_power_law_falling(args):
 # %% Distribution integrals
 
 def test_gaussian_normed_integral(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_value[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_value[i] = gaussian_normed(values[i], meanval, sigmaval);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    test_cases = [(parameter1, parameter2, x_value, y_value)]
-    for some_args in test_cases:
-        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-        y_expected = np.max(x)
+    test_cases = [(6400, 0, 1, -100, 100),
+                  (6400, 42.1, 0.4, 30, 45.7),
+                  (6400, -75.4, 13.6, -300, 100)]
+    for idx, (N, mean, sigma, minval, maxval) in enumerate(test_cases):
+        x = np.linspace(minval, maxval, N)
         defines = """
-        #define N {len(x)}
-        """.format()
+        #define N {}
+        #define meanval {}
+        #define sigmaval {}
+        """.format(N, mean, sigma)
         y = gaps.direct_evaluation(defines + kernel_source,
                                    platform_idx=platform_idx,
                                    device_idx=device_idx,
                                    read_only_arrays=[x],
-                                   write_only_shapes=[1],
-                                   kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
-               ''.format(idx, y, y_expected, y-y_expected))
-        assert close(y, y_expected, tolerance)
+                                   write_only_shapes=[N],
+                                   kernel_name='test_kernel')[0]
+        integrated = scipy.integrate.trapz(y, x)
+        vprint('GaussianNormed Integral [{:>2}]: {:>13.6e}'
+               ''.format(idx, integrated - 1))
+        assert close(integrated, 1, tolerance)
     return
 
 
 def test_log_gaussian_normed_integral(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_value[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_value[i] = log_gaussian_normed(values[i], meanval, sigmaval);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    test_cases = [(parameter1, parameter2, x_value, y_value)]
-    for some_args in test_cases:
-        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-        y_expected = np.max(x)
+    test_cases = [(6400, 0, 1, -100, 100),
+                  (6400, 42.1, 0.4, 30, 45.7),
+                  (6400, -75.4, 13.6, -300, 100)]
+    for idx, (N, mean, sigma, minval, maxval) in enumerate(test_cases):
+        x = np.linspace(minval, maxval, N)
         defines = """
-        #define N {len(x)}
-        """.format()
+        #define N {}
+        #define meanval {}
+        #define sigmaval {}
+        """.format(N, mean, sigma)
         y = gaps.direct_evaluation(defines + kernel_source,
                                    platform_idx=platform_idx,
                                    device_idx=device_idx,
                                    read_only_arrays=[x],
-                                   write_only_shapes=[1],
-                                   kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
-               ''.format(idx, y, y_expected, y-y_expected))
-        assert close(y, y_expected, tolerance)
+                                   write_only_shapes=[N],
+                                   kernel_name='test_kernel')[0]
+        integrated = scipy.integrate.trapz(np.exp(y), x)
+        vprint('LogGaussianNormed Integral [{:>2}]: {:>13.6e}'
+               ''.format(idx, integrated - 1))
+        assert close(integrated, 1, tolerance)
     return
 
 
 def test_trunc_gaussian_integral(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_value[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_value[i] = trunc_gaussian(values[i], meanval, sigmaval, low, high);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    test_cases = [(parameter1, parameter2, x_value, y_value)]
-    for some_args in test_cases:
-        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-        y_expected = np.max(x)
+    test_cases = [(128000, 0, 1, -0.8, 0.92, -1, 1),
+                  (128000, 42.1, 0.4, 32, 44, 30, 45.7),
+                  (128000, -75.4, 13.6, -82.1, -76.9, -100, -50)]
+    for idx, (N, mean, sigma, low, high, minval, maxval) in enumerate(test_cases):
+        x = np.linspace(minval, maxval, N)
         defines = """
-        #define N {len(x)}
-        """.format()
+        #define N {}
+        #define meanval {}
+        #define sigmaval {}
+        #define low {}
+        #define high {}
+        """.format(N, mean, sigma, low, high)
         y = gaps.direct_evaluation(defines + kernel_source,
                                    platform_idx=platform_idx,
                                    device_idx=device_idx,
                                    read_only_arrays=[x],
-                                   write_only_shapes=[1],
-                                   kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
-               ''.format(idx, y, y_expected, y-y_expected))
-        assert close(y, y_expected, tolerance)
+                                   write_only_shapes=[N],
+                                   kernel_name='test_kernel')[0]
+        integrated = scipy.integrate.trapz(y, x)
+        vprint('TruncGaussian Integral [{:>2}]: {:>13.6e}'
+               ''.format(idx, integrated - 1))
+        # TruncNormal seems to be quite hard to integrate using trapz,
+        # so we use a much higher number of points and more lenient
+        # tolerance. Note that this limitation should be largely
+        # independent of limitations based on the float precision.
+        assert close(integrated, 1, 1e-4)
     return
 
 
 def test_log_trunc_gaussian_integral(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_value[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_value[i] = log_trunc_gaussian(values[i], meanval, sigmaval, low, high);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    test_cases = [(parameter1, parameter2, x_value, y_value)]
-    for some_args in test_cases:
-        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-        y_expected = np.max(x)
+    test_cases = [(128000, 0, 1, -0.8, 0.92, -1, 1),
+                  (128000, 42.1, 0.4, 32, 44, 30, 45.7),
+                  (128000, -75.4, 13.6, -82.1, -76.9, -100, -50)]
+    for idx, (N, mean, sigma, low, high, minval, maxval) in enumerate(test_cases):
+        x = np.linspace(minval, maxval, N)
         defines = """
-        #define N {len(x)}
-        """.format()
+        #define N {}
+        #define meanval {}
+        #define sigmaval {}
+        #define low {}
+        #define high {}
+        """.format(N, mean, sigma, low, high)
         y = gaps.direct_evaluation(defines + kernel_source,
                                    platform_idx=platform_idx,
                                    device_idx=device_idx,
                                    read_only_arrays=[x],
-                                   write_only_shapes=[1],
-                                   kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
-               ''.format(idx, y, y_expected, y-y_expected))
-        assert close(y, y_expected, tolerance)
+                                   write_only_shapes=[N],
+                                   kernel_name='test_kernel')[0]
+        integrated = scipy.integrate.trapz(np.exp(y), x)
+        vprint('LogTruncGaussian Integral [{:>2}]: {:>13.6e}'
+               ''.format(idx, integrated - 1))
+        # TruncNormal seems to be quite hard to integrate using trapz,
+        # so we use a much higher number of points and more lenient
+        # tolerance. Note that this limitation should be largely
+        # independent of limitations based on the float precision.
+        assert close(integrated, 1, 1e-4)
     return
 
 
 def test_power_law_integral(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_value[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_value[i] = power_law(values[i], slope, low, high);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    test_cases = [(parameter1, parameter2, x_value, y_value)]
-    for some_args in test_cases:
-        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-        y_expected = np.max(x)
+    test_cases = [(128000, -4, 1, 10, 0.5, 12),
+                  (128000, -3, 1, 10, 0.5, 12),
+                  (128000, -2, 1, 10, 0.5, 12),
+                  (128000, -1, 1, 10, 0.5, 12),
+                  (128000, 0, 1, 10, 0.5, 12),
+                  (128000, 1, 1, 10, 0.5, 12),
+                  (128000, 2, 1, 10, 0.5, 12),
+                  (128000, 3, 1, 10, 0.5, 12),
+                  (128000, 4, 1, 10, 0.5, 12),
+                  (128000, -0.13, 1e-3, 1.2, 0.9e-3, 2),
+                  (128000, 0.78, 14.6, 5.31e2, 12, 1e3),
+                  (128000, -1.23, 5e-5, 3.2e-3, 5e-5, 3.2e-3),
+                  (128000, 1.64, 1.64, 2.64, 1.5, 2.7)]
+    for idx, (N, slope, low, high, minval, maxval) in enumerate(test_cases):
+        x = np.linspace(minval, maxval, N)
         defines = """
-        #define N {len(x)}
-        """.format()
+        #define N {}
+        #define slope {}
+        #define low {}
+        #define high {}
+        """.format(N, slope, low, high)
         y = gaps.direct_evaluation(defines + kernel_source,
                                    platform_idx=platform_idx,
                                    device_idx=device_idx,
                                    read_only_arrays=[x],
-                                   write_only_shapes=[1],
-                                   kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
-               ''.format(idx, y, y_expected, y-y_expected))
-        assert close(y, y_expected, tolerance)
+                                   write_only_shapes=[N],
+                                   kernel_name='test_kernel')[0]
+        integrated = scipy.integrate.trapz(y, x)
+        vprint('PowerLaw Integral [{:>2}]: {:>13.6e}'
+               ''.format(idx, integrated - 1))
+        # Similar to trunc_normal, integrating past the limits drops the
+        # accuracy of trapz massively. For confirmation, we include one
+        # test case where integration and definition bounds coincide.
+        assert close(integrated, 1, 1e-4)
     return
 
 
 def test_power_law_falling_integral(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_value[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_value[i] = power_law_falling(values[i], slope, low);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    test_cases = [(parameter1, parameter2, x_value, y_value)]
-    for some_args in test_cases:
-        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-        y_expected = np.max(x)
+    # expected: 1 - (maxval / low)**(slope+1)
+    test_cases = [(128000, -4, 1, 0.5, 8, 0.998046875),
+                  (128000, -3, 1, 0.5, 12, 0.9930555555555556),
+                  (128000, -2, 1, 0.5, 9, 0.8888888888888888),
+                  (128000, -1.13, 1e-1, 0.9e-3, 27, 0.5170271580077825),
+                  (128000, -1.78, 14.6, 12, 1e3, 0.9630005534740876),
+                  (128000, -1.23, 5e-5, 5e-5, 3.2e-3, 0.6157812046779969)]
+    for idx, (N, slope, low, minval, maxval, expected) in enumerate(test_cases):
+        x = np.linspace(minval, maxval, N)
         defines = """
-        #define N {len(x)}
-        """.format()
+        #define N {}
+        #define slope {}
+        #define low {}
+        """.format(N, slope, low)
         y = gaps.direct_evaluation(defines + kernel_source,
                                    platform_idx=platform_idx,
                                    device_idx=device_idx,
                                    read_only_arrays=[x],
-                                   write_only_shapes=[1],
-                                   kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
-               ''.format(idx, y, y_expected, y-y_expected))
-        assert close(y, y_expected, tolerance)
+                                   write_only_shapes=[N],
+                                   kernel_name='test_kernel')[0]
+        integrated = scipy.integrate.trapz(y, x)
+        vprint('PowerLawFalling Integral [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
+               ''.format(idx, integrated, expected, integrated - expected))
+        # Similar to trunc_normal, integrating past the limits drops the
+        # accuracy of trapz massively. For confirmation, we include one
+        # test case where integration and definition bounds coincide.
+        assert close(integrated, expected, 1e-4)
     return
 
 
 def test_log_power_law_integral(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_value[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_value[i] = log_power_law(values[i], slope, low, high);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    test_cases = [(parameter1, parameter2, x_value, y_value)]
-    for some_args in test_cases:
-        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-        y_expected = np.max(x)
+    test_cases = [(128000, -4, 1, 10, 0.5, 12),
+                  (128000, -3, 1, 10, 0.5, 12),
+                  (128000, -2, 1, 10, 0.5, 12),
+                  (128000, -1, 1, 10, 0.5, 12),
+                  (128000, 0, 1, 10, 0.5, 12),
+                  (128000, 1, 1, 10, 0.5, 12),
+                  (128000, 2, 1, 10, 0.5, 12),
+                  (128000, 3, 1, 10, 0.5, 12),
+                  (128000, 4, 1, 10, 0.5, 12),
+                  (128000, -0.13, 1e-3, 1.2, 0.9e-3, 2),
+                  (128000, 0.78, 14.6, 5.31e2, 12, 1e3),
+                  (128000, -1.23, 5e-5, 3.2e-3, 5e-5, 3.2e-3),
+                  (128000, 1.64, 1.64, 2.64, 1.5, 2.7)]
+    for idx, (N, slope, low, high, minval, maxval) in enumerate(test_cases):
+        x = np.linspace(minval, maxval, N)
         defines = """
-        #define N {len(x)}
-        """.format()
+        #define N {}
+        #define slope {}
+        #define low {}
+        #define high {}
+        """.format(N, slope, low, high)
         y = gaps.direct_evaluation(defines + kernel_source,
                                    platform_idx=platform_idx,
                                    device_idx=device_idx,
                                    read_only_arrays=[x],
-                                   write_only_shapes=[1],
-                                   kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
-               ''.format(idx, y, y_expected, y-y_expected))
-        assert close(y, y_expected, tolerance)
+                                   write_only_shapes=[N],
+                                   kernel_name='test_kernel')[0]
+        integrated = scipy.integrate.trapz(np.exp(y), x)
+        vprint('LogPowerLaw Integral [{:>2}]: {:>13.6e}'
+               ''.format(idx, integrated - 1))
+        # Similar to trunc_normal, integrating past the limits drops the
+        # accuracy of trapz massively. For confirmation, we include one
+        # test case where integration and definition bounds coincide.
+        assert close(integrated, 1, 1e-4)
     return
 
 
 def test_log_power_law_falling_integral(args):
-    raise NotImplementedError
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = some_function(argument list);
+                              __global cdouble ret_value[N]) {
+        for(size_t i = 0; i < N; i++) {
+            ret_value[i] = log_power_law_falling(values[i], slope, low);
+        }
         return;
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
-    test_cases = [(parameter1, parameter2, x_value, y_value)]
-    for some_args in test_cases:
-        x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
-        y_expected = np.max(x)
+    # expected: 1 - (maxval / low)**(slope+1)
+    test_cases = [(128000, -4, 1, 0.5, 8, 0.998046875),
+                  (128000, -3, 1, 0.5, 12, 0.9930555555555556),
+                  (128000, -2, 1, 0.5, 9, 0.8888888888888888),
+                  (128000, -1.13, 1e-1, 0.9e-3, 27, 0.5170271580077825),
+                  (128000, -1.78, 14.6, 12, 1e3, 0.9630005534740876),
+                  (128000, -1.23, 5e-5, 5e-5, 3.2e-3, 0.6157812046779969)]
+    for idx, (N, slope, low, minval, maxval, expected) in enumerate(test_cases):
+        x = np.linspace(minval, maxval, N)
         defines = """
-        #define N {len(x)}
-        """.format()
+        #define N {}
+        #define slope {}
+        #define low {}
+        """.format(N, slope, low)
         y = gaps.direct_evaluation(defines + kernel_source,
                                    platform_idx=platform_idx,
                                    device_idx=device_idx,
                                    read_only_arrays=[x],
-                                   write_only_shapes=[1],
-                                   kernel_name='test_kernel')[0][0]
-        vprint('Whatever [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
-               ''.format(idx, y, y_expected, y-y_expected))
-        assert close(y, y_expected, tolerance)
+                                   write_only_shapes=[N],
+                                   kernel_name='test_kernel')[0]
+        integrated = scipy.integrate.trapz(np.exp(y), x)
+        vprint('LogPowerLawFalling Integral [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
+               ''.format(idx, integrated, expected, integrated - expected))
+        # Similar to trunc_normal, integrating past the limits drops the
+        # accuracy of trapz massively. For confirmation, we include one
+        # test case where integration and definition bounds coincide.
+        assert close(integrated, expected, 1e-4)
     return
 
 
@@ -1806,25 +1884,26 @@ if __name__ == '__main__':
 #        test_power_law_falling(args)
 #        test_log_power_law(args)
 #        test_log_power_law_falling(args)
-#        test_gaussian_normed_integral(args)
-#        test_log_gaussian_normed_integral(args)
-#        test_trunc_gaussian_integral(args)
-#        test_log_trunc_gaussian_integral(args)
-#        test_power_law_integral(args)
-#        test_power_law_falling_integral(args)
-#        test_log_power_law_integral(args)
-#        test_log_power_law_falling_integral(args)
 
-        visual_gaussian(args)
-        visual_gaussian_normed(args)
-        visual_log_gaussian(args)
-        visual_log_gaussian_normed(args)
-        visual_trunc_gaussian(args)
-        visual_log_trunc_gaussian(args)
-        visual_power_law(args)
-        visual_power_law_falling(args)
-        visual_log_power_law(args)
-        visual_log_power_law_falling(args)
+        test_gaussian_normed_integral(args)
+        test_log_gaussian_normed_integral(args)
+        test_trunc_gaussian_integral(args)
+        test_log_trunc_gaussian_integral(args)
+        test_power_law_integral(args)
+        test_power_law_falling_integral(args)
+        test_log_power_law_integral(args)
+        test_log_power_law_falling_integral(args)
+
+#        visual_gaussian(args)
+#        visual_gaussian_normed(args)
+#        visual_log_gaussian(args)
+#        visual_log_gaussian_normed(args)
+#        visual_trunc_gaussian(args)
+#        visual_log_trunc_gaussian(args)
+#        visual_power_law(args)
+#        visual_power_law_falling(args)
+#        visual_log_power_law(args)
+#        visual_log_power_law_falling(args)
 
 
 

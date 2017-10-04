@@ -22,7 +22,7 @@ import scipy.stats
 
 
 VISUAL = None
-VERBOSE = True
+VERBOSE = None
 N_MATH_TESTS = 3
 
 
@@ -74,6 +74,12 @@ def type_and_tolerance(platform_idx, device_idx):
         return np.float64, 1e-8
     else:
         return np.float32, 1e-4
+
+
+# Run tests for all available platforms and devices
+@pytest.fixture(params=device_list)
+def args(request):
+    return request.param
 
 
 # %% Math functions
@@ -1212,7 +1218,7 @@ def visual_trunc_gaussian(args):
     plt.plot(x, y, label='GAPS')
     plt.plot(x, y_expected, '--', label='Scipy')
     plt.legend()
-    plt.title('TruncGaussian\nMean={:.2}, Sigma={:.2}\nLow={:.2}, High={:.2}'
+    plt.title('TruncGaussian\nMean={:.2}, Sigma={:.2}, Low={:.2}, High={:.2}'
               ''.format(mean, sigma, low, high))
     plt.tight_layout()
     return
@@ -1263,7 +1269,7 @@ def visual_log_trunc_gaussian(args):
     plt.plot(x, y, label='GAPS')
     plt.plot(x, y_expected, '--', label='Scipy')
     plt.legend()
-    plt.title('LogTruncGaussian\nMean={:.2}, Sigma={:.2}\nLow={:.2}, High={:.2}'
+    plt.title('LogTruncGaussian\nMean={:.2}, Sigma={:.2}, Low={:.2}, High={:.2}'
               ''.format(mean, sigma, low, high))
     plt.tight_layout()
     return
@@ -1307,7 +1313,7 @@ def visual_power_law(args):
     plt.loglog(x, y_expected, '--', label='Python')
     plt.grid()
     plt.legend()
-    plt.title('PowerLaw\nSlope={:.2}\nLow={:.2}, High={:.2}'
+    plt.title('PowerLaw\nSlope={:.2}, Low={:.2}, High={:.2}'
               ''.format(slope, low, high))
     plt.tight_layout()
     return
@@ -1392,7 +1398,7 @@ def visual_log_power_law(args):
     plt.semilogx(x, y_expected, '--', label='Python')
     plt.grid()
     plt.legend()
-    plt.title('LogPowerLaw (base e)\nSlope={:.2}\nLow={:.2}, High={:.2}'
+    plt.title('LogPowerLaw (base e)\nSlope={:.2}, Low={:.2}, High={:.2}'
               ''.format(slope, low, high))
     plt.tight_layout()
     return
@@ -1434,7 +1440,7 @@ def visual_log_power_law_falling(args):
     plt.semilogx(x, y_expected, '--', label='Python')
     plt.grid()
     plt.legend()
-    plt.title('LogPowerLawFalling (base e)\nSlope={:.2}\nLow={:.2}'
+    plt.title('LogPowerLawFalling (base e)\nSlope={:.2}, Low={:.2}'
               ''.format(slope, low))
     plt.tight_layout()
     return
@@ -1442,6 +1448,7 @@ def visual_log_power_law_falling(args):
 
 if __name__ == '__main__':
     VISUAL = True
+    VERBOSE = True
     import matplotlib.pyplot as plt
 
     for args in device_list:
@@ -1483,9 +1490,9 @@ if __name__ == '__main__':
 #        visual_log_gaussian_normed(args)
 #        visual_trunc_gaussian(args)
 #        visual_log_trunc_gaussian(args)
-        visual_power_law(args)
-        visual_power_law_falling(args)
-        visual_log_power_law(args)
-        visual_log_power_law_falling(args)
+#        visual_power_law(args)
+#        visual_power_law_falling(args)
+#        visual_log_power_law(args)
+#        visual_log_power_law_falling(args)
 
         break

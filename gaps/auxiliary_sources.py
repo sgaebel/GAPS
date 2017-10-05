@@ -16,6 +16,11 @@ Created for Python 3
 # * percentile
 # * sorting
 
+# %% Interpolation
+
+interpolation_template = """
+"""
+
 
 # %% Math Macros
 # TODO: Useful constants not included by default in OpenCL

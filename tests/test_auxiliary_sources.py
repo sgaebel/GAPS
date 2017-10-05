@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created for Python 3
+Tests for `gaps/auxiliary_sources.py`.
 
 @author: Sebastian Gaebel
 @email: sgaebel@star.sr.bham.ac.uk
@@ -24,32 +24,6 @@ import scipy.stats
 VISUAL = None
 VERBOSE = None
 N_MATH_TESTS = 3
-
-
-"""
-@pytest.fixture(params=[model1, model2, model3])
-def model(request):
-    return request.param
-
-def test_awesome(model):
-    assert model == "awesome"
-
-
-
-
-
-
-
-
-def pytest_generate_tests(metafunc):
-    if "model" in metafunc.funcargnames:
-        models = [model1,model2,model3]
-        for model in models:
-            metafunc.addcall(funcargs=dict(model=model))
-
-def test_awesome(model):
-    assert model == "awesome"
-"""
 
 
 device_list = []
@@ -95,9 +69,6 @@ def test_math_function_sum(args):
     }
     """
 
-    # TODO: hardcode important tests
-    # e.g.: include a zero, have some negative numbers
-    # also check against fmax
     for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = np.sum(x, dtype=cdouble)
@@ -124,9 +95,6 @@ def test_math_function_product(args):
     }
     """
 
-    # TODO: hardcode important tests
-    # e.g.: include a zero, have some negative numbers
-    # also check against fmax
     for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = np.product(x, dtype=cdouble)
@@ -153,8 +121,6 @@ def test_math_function_logsumexp(args):
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
     for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = scipy.misc.logsumexp(x)
@@ -181,8 +147,6 @@ def test_math_function_logaddexp(args):
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
     for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 2).astype(cdouble)
         y_expected = np.logaddexp(x[0], x[1])
@@ -209,8 +173,6 @@ def test_math_function_mean(args):
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
     for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = np.mean(x, dtype=cdouble)
@@ -237,8 +199,6 @@ def test_math_function_stddev(args):
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
     for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = np.std(x, dtype=cdouble)
@@ -265,8 +225,6 @@ def test_math_function_iter_min(args):
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
     for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = np.min(x)
@@ -293,8 +251,6 @@ def test_math_function_iter_max(args):
     }
     """
 
-    # TODO: hardcode important tests
-    # also check against fmax
     for idx in range(N_MATH_TESTS):
         x = np.random.uniform(1e-4, 1e4, 10).astype(cdouble)
         y_expected = np.max(x)
@@ -1451,48 +1407,46 @@ if __name__ == '__main__':
     VERBOSE = True
     import matplotlib.pyplot as plt
 
-    for args in device_list:
-        if (args[0], args[2]) != (0, 1):
+    for arguments in device_list:
+        if (arguments[0], arguments[2]) != (0, 1):
             continue
-        print(args[1].name, args[3].name, sep=' - ')
-#        test_math_function_product(args)
-#        test_math_function_sum(args)
-#        test_math_function_logsumexp(args)
-#        test_math_function_logaddexp(args)
-#        test_math_function_mean(args)
-#        test_math_function_stddev(args)
-#        test_math_function_iter_min(args)
-#        test_math_function_iter_max(args)
+        print(arguments[1].name, arguments[3].name, sep=' - ')
+        test_math_function_product(arguments)
+        test_math_function_sum(arguments)
+        test_math_function_logsumexp(arguments)
+        test_math_function_logaddexp(arguments)
+        test_math_function_mean(arguments)
+        test_math_function_stddev(arguments)
+        test_math_function_iter_min(arguments)
+        test_math_function_iter_max(arguments)
 
-#        test_gaussian(args)
-#        test_gaussian_normed(args)
-#        test_log_gaussian(args)
-#        test_log_gaussian_normed(args)
-#        test_trunc_gaussian(args)
-#        test_log_trunc_gaussian(args)
-#        test_power_law(args)
-#        test_power_law_falling(args)
-#        test_log_power_law(args)
-#        test_log_power_law_falling(args)
+        test_gaussian(arguments)
+        test_gaussian_normed(arguments)
+        test_log_gaussian(arguments)
+        test_log_gaussian_normed(arguments)
+        test_trunc_gaussian(arguments)
+        test_log_trunc_gaussian(arguments)
+        test_power_law(arguments)
+        test_power_law_falling(arguments)
+        test_log_power_law(arguments)
+        test_log_power_law_falling(arguments)
 
-#        test_gaussian_normed_integral(args)
-#        test_log_gaussian_normed_integral(args)
-#        test_trunc_gaussian_integral(args)
-#        test_log_trunc_gaussian_integral(args)
-#        test_power_law_integral(args)
-#        test_power_law_falling_integral(args)
-#        test_log_power_law_integral(args)
-#        test_log_power_law_falling_integral(args)
+        test_gaussian_normed_integral(arguments)
+        test_log_gaussian_normed_integral(arguments)
+        test_trunc_gaussian_integral(arguments)
+        test_log_trunc_gaussian_integral(arguments)
+        test_power_law_integral(arguments)
+        test_power_law_falling_integral(arguments)
+        test_log_power_law_integral(arguments)
+        test_log_power_law_falling_integral(arguments)
 
-#        visual_gaussian(args)
-#        visual_gaussian_normed(args)
-#        visual_log_gaussian(args)
-#        visual_log_gaussian_normed(args)
-#        visual_trunc_gaussian(args)
-#        visual_log_trunc_gaussian(args)
-#        visual_power_law(args)
-#        visual_power_law_falling(args)
-#        visual_log_power_law(args)
-#        visual_log_power_law_falling(args)
-
-        break
+        visual_gaussian(arguments)
+        visual_gaussian_normed(arguments)
+        visual_log_gaussian(arguments)
+        visual_log_gaussian_normed(arguments)
+        visual_trunc_gaussian(arguments)
+        visual_log_trunc_gaussian(arguments)
+        visual_power_law(arguments)
+        visual_power_law_falling(arguments)
+        visual_log_power_law(arguments)
+        visual_log_power_law_falling(arguments)

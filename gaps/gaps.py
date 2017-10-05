@@ -9,7 +9,7 @@ Created for Python 3
 
 from .auxiliary_sources import basic_code
 from .utilities import (create_context_and_queue, cdouble, create_read_buffer,
-                        create_write_buffer, compile_kernel)
+                        create_write_buffer, compile_kernel, device_limitations)
 import numpy as np
 import pyopencl as ocl
 
@@ -61,135 +61,109 @@ def direct_evaluation(source_code, platform_idx=None, device_idx=None,
     return write_only_cpu
 
 
-def run_sampler():
-    raise NotImplementedError
-    # Special case: 1 step == only calc likelihood
-
-
-
-# %% Old Tempates
-
-class EnsembleSampler:
-    def __init__():
-        raise NotImplementedError
-
-    def reset():
-        raise NotImplementedError
-
-    def sample():
-        raise NotImplementedError
-
-    def save_to_disk():
-        raise NotImplementedError
-
-    def load_from_disk():
-        raise NotImplementedError
-
-
-def direct_call(parameters, function_source, user_data=None,
-                platform_idx=None, device_idx=None, function_name='logL_fn'):
-    """
-    Directly call the log-likelihood independently of the
-    sampler.
+def run_sampler(logP_fn_source, data=None, state=None, logP_state=None,
+                prior_bounds=None, n_steps=600, n_walkers=1024, b_burnin=120,
+                group_size=None, platform_idx=None, device_idx=None,
+                flatten=True, keys=None, debug_output=False):
+    """Run the OpenCL based ensemble sampler.
 
     Parameters
     ----------
-    parameters : convertable to a 2D float array
-        Points for which the function is to be evaluated. This needs
-        to be convertable to a 2D float array with shape (N_EVAL, N_DIM),
-        where N_EVAL is the number of points for which the function
-        will be evaluated, and N_DIM is the number of dimensions of
-        the parameter space.
-    function_source : string
-        Source code for the function to be called. The call signature
-        needs to be of the form `function_name(__global double parameter_vector, user_data[???])`
-    user_data : numpy array or list of arrays, or None
-        If given, this is either a single numpy array, or a list of
-        numpy arrays. These are passed to `function_name` after the
-        parameter vector in order. Array shapes are available as
-        constants named `USER_DIM_Y` `USER_DIM_X_Y` where `X` is the
-        position in the list (if given) and `Y` is the index of the
-        dimension for the given array. Default: None.
-        NOTE: Currently all user data is converted to np.float64 and
-        passed along to `function_name` as double.
-    platform_idx : int or None
-    device_idx : int or None
-        Indices of the chosen OpenCL platform and device. These
-        indices are passed through to `create_context_and_queue`,
-        refer to its documentation for more details.
+    logP_fn_source : str
+        Source code of the logP function from which samples are to be
+        drawn. The function signature is required to be of the form
+        `cfloat logP_fn(const cfloat point, $USER$)` where $USER$ should  # TODO: const?
+        accept the user_data passed to the sampler in order (if any).
+    data : float array-like
+        User defined data objects which are immaterial to the sampler,
+        but passed through to `logP_fn`. Default: None.
+    state : numpy array
+        The initial state of the sampler. This needs to be convertable
+        to a floating point numpy array of shape (n_walkers, n_dim).
         Default: None.
-    function_name : string
-        Name of the user-defined function to be evaluated.
-        Default: 'logL_fn'.
+    logP_state : numpy array
+        If `state` is given, the corresponding logP_values may be made
+        available as well. These are assumed to be accurate without
+        further checks. This may be useful if the sampling process
+        is to be split up into smaller chunks as it avoids duplicated
+        computations. The shape of this array must be (n_walkers,).
+        Default: None.
+    prior_bounds : list of float pairs
+        Instead of passing a initial state, the prior bounds may be
+        given instead. In this case the initial state is drawn from
+        a uniform distribution between the prior bounds. Passing both
+        `state` and `prior_bounds` will raise ValueError. Default: None.
+    n_steps : int > 0
+        Number of steps to be taken by each walker. Default: 600.
+    n_walkers : int > 0
+        Number of walkers in the ensemble. Default: 1024.
+    n_burnin : int >= 0
+        Number of discarded initial steps to be taken by each walker.
+        If this value is non-zero the total number of steps taken by
+        each walker will be n_steps+n_burnin. Default: 120.
+    group_size : int
+        Based on architectural and device specific limitations the
+        ensemble may be split up into smaller subgroups. The size of
+        these groups is chosen automatically is `group_size` is None.
+        If specified, the number of walker must be a multiple of this
+        group size. Larger group sizes are generally preferred.
+        For large numbers of walkers and small group sizes device
+        limitations on the number of work items may become relevant.
+        Default: None.
+    platform_idx : int
+    device_idx : int
+        Indices of the chosen OpenCL platform and device on that
+        platform. If both are None the device is chosen via
+        `pyopencl.creat_some_context()`. Default: None.
+    flatten : bool
+        If True, the returns chains are flattened to hide the split
+        by walker. Default: True.
+    keys : list
+        If given, this list will be used to generate dict-like
+        structured numpy array, which is returned instead of the usual
+        tuple.
+    debug_output : bool
+        The sampler may produce additional output which is useful
+        for debugging logp_fn. This includes proposed points
+        irregardless of whether they were accepted or not, as well as
+        the logP values for those points. Optionally an additional
+        debug_fn may be passed via `debug_fn_source` (which has the
+        same requirements and function signature as `logP_fn`) whose
+        output will be returned as well. Default: False.
+    debug_fn_source : str
+        Source code defining `debug_fn`, which has the same requirements
+        and function signature as `logP_fn`. Passing a values to this
+        argument automatically enables `debug_output` as well.
+        Default: None.
 
     Returns
     -------
-    value : numpy array of shape (N_EVAL,)
-    """
-    context, queue = create_context_and_queue(platform_idx=platform_idx,
-                                              device_idx=device_idx)
-    parameters_cpu = np.array(parameters, dtype=np.float64)
-    parameters_gpu = ocl.Buffer(context, READ_ONLY | COPY_HOST_PTR,
-                                hostbuf=parameters_cpu)
-    n_eval, n_dim = parameters_cpu.shape
-    logL_values_cpu = np.zeros(n_eval, dtype=np.float64)
-    logL_values_gpu = ocl.Buffer(context, WRITE_ONLY, logL_values_cpu.nbytes)
+    Posterior chains, logP values, and optional debug output. If `keys`
+    is given, chains and logP_values will be combined into a single
+    dict-like structured array. If flatten is True, the walker and step
+    axes are combined into a single axis in all data products.
+    If debug_output is True, the return values will contain an
+    additional dict of data useful for debugging.
 
-    defines = """
-    #define N_DIM {n_dim}
-    #define N_EVAL {n_dim}
-    """.format(n_dim=n_dim, n_eval=n_eval)
-    if user_data is None:
-        user_data_arguments = ''
-        user_data_call = ''
-        user_data_gpu = []
-    elif isinstance(user_data, np.ndarray):
-        user_data = user_data.astype(np.float64)
-        for idx, length in enumerate(user_data.shape):
-            defines += '\n#define USER_DIM_{} {}'.format(idx, length)
-        user_data_arguments = ', __global const double user_data[{}]'.format(
-            ', '.join(map(str, user_data.shape)))
-        user_data_call = ', user_data'
-        user_data_gpu = [ocl.Buffer(context, READ_ONLY | COPY_HOST_PTR,
-                                    hostbuf=user_data)]
-    else:
-        for arr_idx, array in enumerate(user_data):
-            user_data[arr_idx] = array.astype(np.float64)
-        user_data_arguments = ''
-        user_data_call = ''
-        user_data_gpu = []
-        for arr_idx, array in enumerate(user_data):
-            for idx, length in enumerate(user_data.shape):
-                defines += '\n#define USER_DIM_{}_{} {}'.format(arr_idx, idx, length)
-            user_data_arguments += ', __global const double user_data_{}[{}]'.format(
-                arr_idx, ', '.join(map(str, user_data.shape)))
-            user_data_call += ', user_data_{}'.format(arr_idx)
-            user_data_gpu.append(ocl.Buffer(context, READ_ONLY | COPY_HOST_PTR,
-                                            hostbuf=user_data[arr_idx]))
-    kernel_source = """
-    ___kernel void DirectEvaluation(__global double parameters[N_EVAL][N_DIM],
-                                    __global double logL_values[N_EVAL] USER_DATA_ARGUMENTS) {
-        const size_t eval_idx = get_global_idx(0);
-        double parameter_vector[N_DIM];
-        for(size_t i = 0; i < N_DIM; i++) {
-            parameter_vector[i] = parameters[eval_idx][i];
-        }
-        logL_values[eval_idx] = GAPS_FUNC_NAME(parameter_vector USER_DATA_CALL);
-        return;
-    }
-    """
-    kernel_source = kernel_source.replace('GAPS_FUNC_NAME', function_name)
-    kernel_source = kernel_source.replace('USER_DATA_ARGUMENTS', user_data_arguments)
-    kernel_source = kernel_source.replace('USER_DATA_CALL', user_data_call)
-    source_code = defines + basic_code(queue) + function_source + kernel_source
+    Notes
+    -----
+    A more detailed description on the requirements of logP_fn and
+    additional useful information is given in `README.md`.
 
-    program = ocl.Program(context, source_code).build()
-    event = program.DirectEvaluation(queue, (1,), (n_eval,),
-                                     parameters_gpu, logL_values_gpu,
-                                     *user_data_gpu)
-    ocl.enqueue_barrier(queue, wait_for=[event])
-    ocl.enqueue_copy(queue, logL_values_cpu, logL_values_gpu)
-    return logL_values_cpu
+    Examples of output structure:
+        flatten==True, keys==None:
+            chains.shape == (n_walkers*n_steps, n_dim)
+            logP_values.shape == (n_walkers*n_steps)
+        flatten==False, keys==None:
+            chains.shape == (n_walkers, n_steps, n_dim)
+            logP_values.shape == (n_walkers, n_steps)
+        flatten==True, keys!=None:
+            return_value.shape == (n_walkers*n_steps)
+        flatten==False, keys!=None:
+            return_value.shape == (n_walkers, n_steps)
+    """
+    raise NotImplementedError
+
 
 
 if __name__ == '__main__':

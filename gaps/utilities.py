@@ -12,7 +12,7 @@ information.
 @email: sgaebel@star.sr.bham.ac.uk
 """
 
-from .auxiliary_sources import basic_code
+#from .auxiliary_sources import basic_code
 import numpy as np
 import pyopencl as ocl
 
@@ -51,11 +51,20 @@ def compile_kernel(context, queue, source_code, function_name,
     defined in `utilities.py`."""
     if cdouble(queue)(42).nbytes >= 8:
         type_definitions = """
-        #define cdouble double"""
+        #define cdouble double
+        """
     else:
         print('WARNING: no 64bit float support available for this device.')
         type_definitions = """
-        #define cdouble float"""
+        #define cdouble float
+        """
+    # The definition of cfloat and cshort is fixed for now since I do
+    # not know of any cases where these are not available. If this
+    # happens to be the case, we can add a check as for double here.
+    type_definitions += """
+    #define cfloat float
+    #define cshort short
+    """
     flags = BUILD_OPTIONS[:]
     if compiler_flags is not None:
         flags.extend(compiler_flags)
@@ -161,6 +170,16 @@ def memory_size(n_bytes, *, SI=False, template='{:.2f} {} ({} B)'):
     return template.format(n_units, unit, n_bytes)
 
 
+def device_limitations(device):
+    limitations = dict(
+        global_memory=device.get_info(ocl.device_info.GLOBAL_MEM_SIZE),
+        local_memory=device.get_info(ocl.device_info.LOCAL_MEM_SIZE),
+        constant_memory=device.get_info(ocl.device_info.MAX_CONSTANT_BUFFER_SIZE),
+        alloc_size=device.get_info(ocl.device_info.MAX_MEM_ALLOC_SIZE),
+        group_size=device.get_info(ocl.device_info.MAX_WORK_GROUP_SIZE))
+    return limitations
+
+
 def print_devices(detail_level=0):
     """
     Print all platforms and device available, optionall with detailed
@@ -188,6 +207,8 @@ def print_devices(detail_level=0):
      * 4 Fine detail
      * 5 Rarely available, vendor specific, or deemed largely useless
     """
+    if detail_level < 0:
+        raise ValueError('Negative detail level: {!r}'.format(detail_level))
     if detail_level < 1:
         for platform_idx, platform in enumerate(ocl.get_platforms()):
             print('Platform [{}]: {} ({})'.format(platform_idx, platform.name,
@@ -333,7 +354,7 @@ def print_devices(detail_level=0):
         (5, 'NUM_SIMULTANEOUS_INTEROPS_INTEL'),
         (1, 'OPENCL_C_VERSION'),
         (5, 'PAGE_SIZE_QCOM'),
-        (5, 'PARENT_DEVICE'),
+        #(5, 'PARENT_DEVICE'),  # Somehow, this crashes Python.
         (5, 'PARTITION_AFFINITY_DOMAIN'),
         (5, 'PARTITION_MAX_SUB_DEVICES'),
         (5, 'PARTITION_PROPERTIES'),
@@ -430,4 +451,3 @@ def print_devices(detail_level=0):
 
 if __name__ == '__main__':
     print_devices(3)
-    raise NotImplementedError

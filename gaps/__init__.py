@@ -11,4 +11,4 @@ Created for Python 3
 from .convergence import (gelman_rubin, plot_gelman_rubin_brooks,
                           plot_likelihood)
 from .gaps import direct_evaluation
-from .utilities import cdouble
+from .utilities import cdouble, memory_size, print_devices

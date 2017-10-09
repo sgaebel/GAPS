@@ -9,16 +9,51 @@ floats, printing available devices and platform with detailed
 information.
 
 @author: Sebastian M. Gaebel
-@email: sgaebel@star.sr.bham.ac.uk
+@email: sebastian.gaebel@ligo.org
 """
 
-#from .auxiliary_sources import basic_code
+from .auxiliary_sources import basic_code
 import numpy as np
 import pyopencl as ocl
 
 
 BUILD_OPTIONS = ['-cl-fp32-correctly-rounded-divide-sqrt',
                  '-Werror']
+
+
+def digest_user_data(data, cdouble_t):
+    """Ensures that user data is either None, a numpy array, or a
+    collection of numpy arrays. All array are converted to `cdouble`.
+    Additionally, the OpenCL code to be inserted in the function
+    signature is generated."""
+    if data is None:
+        user_data = []
+        func_name = ''
+        func_call = ''
+        return user_data, func_name, func_call
+    if isinstance(data, np.ndarray):
+        c_shape = ''.join('[{}]'.format(x) for x in data.shape)
+        user_data = [data.astype(cdouble_t)]
+        func_name = 'user_data_0'.format(c_shape)
+        func_def = '__global const cdouble {}{}'.format(func_name, c_shape)
+        return user_data, ', '+func_name, ', '+func_def
+    if isinstance(data, (list, tuple)):
+        user_data = []
+        func_names = []
+        func_defs = []
+        for idx, element in enumerate(data):
+            converted = np.array(element, dtype=cdouble_t)
+            c_shape = ''.join('[{}]'.format(x) for x in converted.shape)
+            func_name = 'user_data_{}'.format(idx)
+            user_data.append(converted)
+            func_defs.append('__global const cdouble {}{}'.format(func_name,
+                                                                  c_shape))
+            func_names.append(func_name)
+        func_names = ', ' + (', '.join(func_names))
+        func_defs = ', ' + (', '.join(func_defs))
+        return user_data, func_names, func_defs
+    raise TypeError('User data type {!r} is not recognised.'
+                    ''.format(type(data)))
 
 
 def create_read_buffer(context, host):
@@ -41,6 +76,16 @@ def cdouble(queue):
         return np.float64
     else:
         return np.float32
+
+
+def cfloat(queue=None):
+    """Currently, cfloat is always `np.float32`."""
+    return np.float32
+
+
+def cshort(queue=None):
+    """Currently, cshort is always `np.float16`."""
+    return np.float16
 
 
 def compile_kernel(context, queue, source_code, function_name,
@@ -178,6 +223,17 @@ def device_limitations(device):
         alloc_size=device.get_info(ocl.device_info.MAX_MEM_ALLOC_SIZE),
         group_size=device.get_info(ocl.device_info.MAX_WORK_GROUP_SIZE))
     return limitations
+
+
+def compute_group_size(device, n_dim, cfloat_t):
+    local_avail = device_limitations(device)['local_memory']
+    max_group_size = local_avail / (2*(n_dim+1)*cfloat_t(1.0).nbytes)
+    ideal_group_size = 2**np.floor(np.log2(max_group_size))
+    if int(1.5*ideal_group_size) < max_group_size:
+        ideal_group_size = int(1.5*ideal_group_size)
+    if ideal_group_size > device_limitations(device)['group_size']:
+        ideal_group_size = device_limitations(device)['group_size']
+    return int(ideal_group_size)
 
 
 def print_devices(detail_level=0):

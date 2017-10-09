@@ -3,8 +3,8 @@
 """
 Tests for `gaps/utilities.py`.
 
-@author: Sebastian Gaebel
-@email: sgaebel@star.sr.bham.ac.uk
+@author: Sebastian M. Gaebel
+@email: sebastian.gaebel@ligo.org
 """
 
 import gaps

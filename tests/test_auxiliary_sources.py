@@ -3,8 +3,8 @@
 """
 Tests for `gaps/auxiliary_sources.py`.
 
-@author: Sebastian Gaebel
-@email: sgaebel@star.sr.bham.ac.uk
+@author: Sebastian M. Gaebel
+@email: sebastian.gaebel@ligo.org
 """
 
 
@@ -268,6 +268,7 @@ def test_math_function_iter_max(args):
 
 # %% Distributions
 
+
 def test_gaussian(args):
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
@@ -275,38 +276,6 @@ def test_gaussian(args):
     __kernel void test_kernel(__global const cdouble values[3],
                               __global cdouble ret_value[1]) {
         ret_value[0] = gaussian(values[2], values[0], values[1]);
-        return;
-    }
-    """
-
-    # Expected values: scipy.stats.norm.pdf(x, mean, sigma) * (sigma * np.sqrt(2*np.pi))
-    test_cases = [(42, 10.1, 31.2, 0.56455997531486624),
-                  (-12.4, 35, 5.6, 0.87612640723526436),
-                  (0, 1, 0, 1.0),
-                  (0, 1, 1, 0.60653065971263342),
-                  (-2, 0.2, 1, 1.3863432936411706e-49),
-                  (-2, 0.2, -12, 0.0)]
-    for idx, (mean, sigma, x, y_expected) in enumerate(test_cases):
-        values = np.array([mean, sigma, x], dtype=cdouble)
-        y = gaps.direct_evaluation(kernel_source,
-                                   platform_idx=platform_idx,
-                                   device_idx=device_idx,
-                                   read_only_arrays=[values],
-                                   write_only_shapes=[1],
-                                   kernel_name='test_kernel')[0][0]
-        vprint('Gaussian [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
-               ''.format(idx, y, y_expected, y-y_expected))
-        assert close(y, y_expected, tolerance)
-    return
-
-
-def test_gaussian_normed(args):
-    platform_idx, platform, device_idx, device = args
-    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-    kernel_source = """
-    __kernel void test_kernel(__global const cdouble values[3],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = gaussian_normed(values[2], values[0], values[1]);
         return;
     }
     """
@@ -326,7 +295,7 @@ def test_gaussian_normed(args):
                                    read_only_arrays=[values],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('GaussianNormed [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
+        vprint('Gaussian [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -339,38 +308,6 @@ def test_log_gaussian(args):
     __kernel void test_kernel(__global const cdouble values[3],
                               __global cdouble ret_value[1]) {
         ret_value[0] = log_gaussian(values[2], values[0], values[1]);
-        return;
-    }
-    """
-
-    # Expected values: -0.5 * (value - mean)**2 / sigma**2
-    test_cases = [(42, 10.1, 31.2, -0.5717086560141164),
-                  (-12.4, 35, 5.6, -0.13224489795918368),
-                  (0, 1, 0, 0.0),
-                  (0, 1, 1, -0.5),
-                  (-2, 0.2, 1, -112.49999999999997),
-                  (-2, 0.2, -12, -1249.9999999999998)]
-    for idx, (mean, sigma, x, y_expected) in enumerate(test_cases):
-        values = np.array([mean, sigma, x], dtype=cdouble)
-        y = gaps.direct_evaluation(kernel_source,
-                                   platform_idx=platform_idx,
-                                   device_idx=device_idx,
-                                   read_only_arrays=[values],
-                                   write_only_shapes=[1],
-                                   kernel_name='test_kernel')[0][0]
-        vprint('LogGaussian [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
-               ''.format(idx, y, y_expected, y-y_expected))
-        assert close(y, y_expected, tolerance)
-    return
-
-
-def test_log_gaussian_normed(args):
-    platform_idx, platform, device_idx, device = args
-    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-    kernel_source = """
-    __kernel void test_kernel(__global const cdouble values[3],
-                              __global cdouble ret_value[1]) {
-        ret_value[0] = log_gaussian_normed(values[2], values[0], values[1]);
         return;
     }
     """
@@ -390,7 +327,7 @@ def test_log_gaussian_normed(args):
                                    read_only_arrays=[values],
                                    write_only_shapes=[1],
                                    kernel_name='test_kernel')[0][0]
-        vprint('LogGaussianNormed [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
+        vprint('LogGaussian [{:>2}]: {:>13.6e} vs. {:>13.6e} ({})'
                ''.format(idx, y, y_expected, y-y_expected))
         assert close(y, y_expected, tolerance)
     return
@@ -635,14 +572,14 @@ def test_log_power_law_falling(args):
 
 # %% Distribution integrals
 
-def test_gaussian_normed_integral(args):
+def test_gaussian_integral(args):
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
                               __global cdouble ret_value[N]) {
         for(size_t i = 0; i < N; i++) {
-            ret_value[i] = gaussian_normed(values[i], meanval, sigmaval);
+            ret_value[i] = gaussian(values[i], meanval, sigmaval);
         }
         return;
     }
@@ -665,20 +602,20 @@ def test_gaussian_normed_integral(args):
                                    write_only_shapes=[N],
                                    kernel_name='test_kernel')[0]
         integrated = scipy.integrate.trapz(y, x)
-        vprint('GaussianNormed Integral [{:>2}]: {:>13.6e}'
+        vprint('Gaussian Integral [{:>2}]: {:>13.6e}'
                ''.format(idx, integrated - 1))
         assert close(integrated, 1, tolerance)
     return
 
 
-def test_log_gaussian_normed_integral(args):
+def test_log_gaussian_integral(args):
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
     kernel_source = """
     __kernel void test_kernel(__global const cdouble values[N],
                               __global cdouble ret_value[N]) {
         for(size_t i = 0; i < N; i++) {
-            ret_value[i] = log_gaussian_normed(values[i], meanval, sigmaval);
+            ret_value[i] = log_gaussian(values[i], meanval, sigmaval);
         }
         return;
     }
@@ -701,7 +638,7 @@ def test_log_gaussian_normed_integral(args):
                                    write_only_shapes=[N],
                                    kernel_name='test_kernel')[0]
         integrated = scipy.integrate.trapz(np.exp(y), x)
-        vprint('LogGaussianNormed Integral [{:>2}]: {:>13.6e}'
+        vprint('LogGaussian Integral [{:>2}]: {:>13.6e}'
                ''.format(idx, integrated - 1))
         assert close(integrated, 1, tolerance)
     return
@@ -997,7 +934,7 @@ def visual_gaussian(args):
     minval = mean - (3*sigma * np.random.uniform(0.75, 1.5))
     maxval = mean + (3*sigma * np.random.uniform(0.75, 1.5))
     x = np.linspace(minval, maxval, 720)
-    y_expected = scipy.stats.norm.pdf(x, loc=mean, scale=sigma) * (sigma * np.sqrt(2*np.pi))
+    y_expected = scipy.stats.norm.pdf(x, loc=mean, scale=sigma)
     defines = """
     #define N {}
     #define meanval {}
@@ -1018,45 +955,6 @@ def visual_gaussian(args):
     return
 
 
-def visual_gaussian_normed(args):
-    platform_idx, platform, device_idx, device = args
-    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-    kernel_source = """
-    __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_values[N]) {
-        for(size_t i = 0; i < N; i++) {
-            ret_values[i] = gaussian_normed(values[i], meanval, sigmaval);
-        }
-        return;
-    }
-    """
-
-    mean = np.random.uniform(-256, 256)
-    sigma = 10**np.random.uniform(-2, 2)
-    minval = mean - (3*sigma * np.random.uniform(0.75, 1.5))
-    maxval = mean + (3*sigma * np.random.uniform(0.75, 1.5))
-    x = np.linspace(minval, maxval, 720)
-    y_expected = scipy.stats.norm.pdf(x, loc=mean, scale=sigma)
-    defines = """
-    #define N {}
-    #define meanval {}
-    #define sigmaval {}
-    """.format(len(x), mean, sigma)
-    y = gaps.direct_evaluation(defines + kernel_source,
-                               platform_idx=platform_idx,
-                               device_idx=device_idx,
-                               read_only_arrays=[x],
-                               write_only_shapes=[len(x)],
-                               kernel_name='test_kernel')[0]
-    plt.figure()
-    plt.plot(x, y, label='GAPS')
-    plt.plot(x, y_expected, '--', label='Scipy')
-    plt.legend()
-    plt.title('GaussianNormed\nMean={:.2}, Sigma={:.2}'.format(mean, sigma))
-    plt.tight_layout()
-    return
-
-
 def visual_log_gaussian(args):
     platform_idx, platform, device_idx, device = args
     cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
@@ -1065,45 +963,6 @@ def visual_log_gaussian(args):
                               __global cdouble ret_values[N]) {
         for(size_t i = 0; i < N; i++) {
             ret_values[i] = log_gaussian(values[i], meanval, sigmaval);
-        }
-        return;
-    }
-    """
-
-    mean = np.random.uniform(-256, 256)
-    sigma = 10**np.random.uniform(-2, 2)
-    minval = mean - (3*sigma * np.random.uniform(0.75, 1.5))
-    maxval = mean + (3*sigma * np.random.uniform(0.75, 1.5))
-    x = np.linspace(minval, maxval, 720)
-    y_expected = scipy.stats.norm.logpdf(x, loc=mean, scale=sigma) + np.log(sigma) + 0.5 * np.log(2*np.pi)
-    defines = """
-    #define N {}
-    #define meanval {}
-    #define sigmaval {}
-    """.format(len(x), mean, sigma)
-    y = gaps.direct_evaluation(defines + kernel_source,
-                               platform_idx=platform_idx,
-                               device_idx=device_idx,
-                               read_only_arrays=[x],
-                               write_only_shapes=[len(x)],
-                               kernel_name='test_kernel')[0]
-    plt.figure()
-    plt.plot(x, y, label='GAPS')
-    plt.plot(x, y_expected, '--', label='Scipy')
-    plt.legend()
-    plt.title('LogGaussian\nMean={:.2}, Sigma={:.2}'.format(mean, sigma))
-    plt.tight_layout()
-    return
-
-
-def visual_log_gaussian_normed(args):
-    platform_idx, platform, device_idx, device = args
-    cdouble, tolerance = type_and_tolerance(platform_idx, device_idx)
-    kernel_source = """
-    __kernel void test_kernel(__global const cdouble values[N],
-                              __global cdouble ret_values[N]) {
-        for(size_t i = 0; i < N; i++) {
-            ret_values[i] = log_gaussian_normed(values[i], meanval, sigmaval);
         }
         return;
     }
@@ -1130,7 +989,7 @@ def visual_log_gaussian_normed(args):
     plt.plot(x, y, label='GAPS')
     plt.plot(x, y_expected, '--', label='Scipy')
     plt.legend()
-    plt.title('LogGaussianNormed\nMean={:.2}, Sigma={:.2}'.format(mean, sigma))
+    plt.title('LogGaussian\nMean={:.2}, Sigma={:.2}'.format(mean, sigma))
     plt.tight_layout()
     return
 
@@ -1421,9 +1280,7 @@ if __name__ == '__main__':
         test_math_function_iter_max(arguments)
 
         test_gaussian(arguments)
-        test_gaussian_normed(arguments)
         test_log_gaussian(arguments)
-        test_log_gaussian_normed(arguments)
         test_trunc_gaussian(arguments)
         test_log_trunc_gaussian(arguments)
         test_power_law(arguments)
@@ -1431,8 +1288,8 @@ if __name__ == '__main__':
         test_log_power_law(arguments)
         test_log_power_law_falling(arguments)
 
-        test_gaussian_normed_integral(arguments)
-        test_log_gaussian_normed_integral(arguments)
+        test_gaussian_integral(arguments)
+        test_log_gaussian_integral(arguments)
         test_trunc_gaussian_integral(arguments)
         test_log_trunc_gaussian_integral(arguments)
         test_power_law_integral(arguments)
@@ -1441,9 +1298,7 @@ if __name__ == '__main__':
         test_log_power_law_falling_integral(arguments)
 
         visual_gaussian(arguments)
-        visual_gaussian_normed(arguments)
         visual_log_gaussian(arguments)
-        visual_log_gaussian_normed(arguments)
         visual_trunc_gaussian(arguments)
         visual_log_trunc_gaussian(arguments)
         visual_power_law(arguments)

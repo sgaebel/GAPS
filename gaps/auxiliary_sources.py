@@ -1,10 +1,11 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created for Python 3
+Mathematical constants and functions extending the functionality
+available from OpenCL directly.
 
-@author: Sebastian Gaebel
-@email: sgaebel@star.sr.bham.ac.uk
+@author: Sebastian M. Gaebel
+@email: sebastian.gaebel@ligo.org
 """
 
 
@@ -32,8 +33,8 @@ math_constants = """
 #define M_LOG_1_SQRT2PI -0.91893853320467267
 #define M_SQRT_2_PI 0.79788456080286541
 #define M_LOG_SQRT_2_PI -0.22579135264472738
-#ifndef M_SQRT1_2
-    #define M_SQRT1_2 0.70710678118654757
+#ifndef M_1_SQRT2
+    #define M_1_SQRT2 0.70710678118654757
 #endif
 """
 
@@ -129,18 +130,10 @@ cdouble iter_max(__global const cdouble * iterable, const size_t length) {
 
 gaussian_pdf_templates = """
 cdouble gaussian(const cdouble value, const cdouble mean, const cdouble stddev) {
-    return exp(-0.5 * pown((value - mean) / stddev, 2));
-}
-
-cdouble gaussian_normed(const cdouble value, const cdouble mean, const cdouble stddev) {
     return M_1_SQRT2PI * exp(-0.5 * pown((value - mean) / stddev, 2)) / stddev;
 }
 
 cdouble log_gaussian(const cdouble value, const cdouble mean, const cdouble stddev) {
-    return -0.5 * pown((value - mean) / stddev, 2);
-}
-
-cdouble log_gaussian_normed(const cdouble value, const cdouble mean, const cdouble stddev) {
     return M_LOG_1_SQRT2PI - 0.5 * pown((value - mean) / stddev, 2) - log(stddev);
 }
 """
@@ -152,8 +145,8 @@ cdouble trunc_gaussian(const cdouble value, const cdouble mean, const cdouble st
         return 0.;
     }
     const cdouble inv_stddev = 1.0 / stddev;
-    const cdouble erf_L = erf((low - mean) * M_SQRT1_2 * inv_stddev);
-    const cdouble erf_H = erf((high - mean) * M_SQRT1_2 * inv_stddev);
+    const cdouble erf_L = erf((low - mean) * M_1_SQRT2 * inv_stddev);
+    const cdouble erf_H = erf((high - mean) * M_1_SQRT2 * inv_stddev);
     return M_SQRT_2_PI * inv_stddev * exp(-0.5 * pown((value - mean) * inv_stddev, 2)) / (erf_H - erf_L);
 }
 
@@ -164,7 +157,7 @@ cdouble log_trunc_gaussian(const cdouble value, const cdouble mean, const cdoubl
     }
     const cdouble inv_stddev = 1.0 / stddev;
     const cdouble log_sqrt_2_pi = -0.22579135264472741;
-    return log_sqrt_2_pi - log(stddev) - 0.5 * pown((value - mean) * inv_stddev, 2) - log(erf((high - mean) * M_SQRT1_2 * inv_stddev) - erf((low - mean) * M_SQRT1_2 * inv_stddev));
+    return log_sqrt_2_pi - log(stddev) - 0.5 * pown((value - mean) * inv_stddev, 2) - log(erf((high - mean) * M_1_SQRT2 * inv_stddev) - erf((low - mean) * M_1_SQRT2 * inv_stddev));
 }
 """
 

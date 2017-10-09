@@ -1,10 +1,8 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created for Python 3
-
-@author: Sebastian Gaebel
-@email: sgaebel@star.sr.bham.ac.uk
+@author: Sebastian M. Gaebel
+@email: sebastian.gaebel@ligo.org
 """
 
 #try:
@@ -14,4 +12,3 @@ Created for Python 3
 
 if __name__ == '__main__':
     pass
-

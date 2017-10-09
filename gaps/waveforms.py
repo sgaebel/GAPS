@@ -1,13 +1,13 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created for Python 3
+OpenCL source code for waveform models of gravitational waves produced
+by compact binary coalescences.
 
-@author: Sebastian Gaebel
-@email: sgaebel@star.sr.bham.ac.uk
+@author: Sebastian M. Gaebel
+@email: sebastian.gaebel@ligo.org
 """
 
 
 def IMRPhenomD(*parameters):
     raise NotImplementedError
-

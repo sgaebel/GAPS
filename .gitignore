@@ -1,6 +1,7 @@
 __pycache__/
 untracked/
 .cache/
+gaps.egg-info/
 *.py[cod]
 *.npy
 *.pkl

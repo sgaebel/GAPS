@@ -7,7 +7,8 @@ GAPS is an affine invariant ensemble sampler by Goodman & Weare ([DOI: 10.2140/c
 Since the code is still in early stages the you may want to install this module as 'editable' via:
 
 ```
-pip install -e git+https://github.com/sgaebel/GAPS
+git clone https://github.com/sgaebel/GAPS /path/to/GAPS/
+pip install -e /path/to/GAPS/
 ```
 
 The main dependencies are `numpy`, `matplotlib`, and `pyopencl`. Installation instructions for `pyopencl` are available in its [documentation](https://documen.tician.de/pyopencl/misc.html) and may vary strongly based on the operating system.

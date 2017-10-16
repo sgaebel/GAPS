@@ -42,6 +42,8 @@ math_constants = """
 # %% Math templates
 
 sum_template = """
+cdouble sum(__global const cdouble *, const size_t);
+
 cdouble sum(__global const cdouble * iterable, const size_t length) {
     cdouble accumulator = 0;
     for(size_t i = 0; i < length; i++) {
@@ -52,6 +54,8 @@ cdouble sum(__global const cdouble * iterable, const size_t length) {
 """
 
 product_template = """
+cdouble product(__global const cdouble *, const size_t);
+
 cdouble product(__global const cdouble * iterable, const size_t length) {
     cdouble accumulator = 1;
     for(size_t i = 0; i < length; i++) {
@@ -62,6 +66,8 @@ cdouble product(__global const cdouble * iterable, const size_t length) {
 """
 
 logsumexp_template = """
+cdouble logsumexp(__global const cdouble *, const size_t);
+
 cdouble logsumexp(__global const cdouble * log_values, size_t length) {
     cdouble max_value = -INFINITY;
     for(size_t i = 0; i < length; i++) {
@@ -76,12 +82,16 @@ cdouble logsumexp(__global const cdouble * log_values, size_t length) {
 """
 
 logaddexp_template = """
+cdouble logaddexp(const cdouble, const cdouble);
+
 cdouble logaddexp(const cdouble x, const cdouble y) {
     return fmax(x, y) + log1p(exp(-fabs(x - y)));
 }
 """
 
 mean_template = """
+cdouble mean(__global const cdouble *, const size_t);
+
 cdouble mean(__global const cdouble * iterable, const size_t length) {
     cdouble accumulator = 0;
     for(size_t i = 0; i < length; i++) {
@@ -92,6 +102,8 @@ cdouble mean(__global const cdouble * iterable, const size_t length) {
 """
 
 stddev_template = """
+cdouble stddev(__global const cdouble *, const size_t);
+
 cdouble stddev(__global const cdouble * iterable, const size_t length) {
     const cdouble mean_value = mean(iterable, length);
     cdouble accumulator = 0;
@@ -103,6 +115,8 @@ cdouble stddev(__global const cdouble * iterable, const size_t length) {
 """
 
 min_template = """
+cdouble iter_min(__global const cdouble *, const size_t);
+
 cdouble iter_min(__global const cdouble * iterable, const size_t length) {
     cdouble current_min = iterable[0];
     for(size_t i = 1; i < length; i++) {
@@ -113,6 +127,8 @@ cdouble iter_min(__global const cdouble * iterable, const size_t length) {
 """
 
 max_template = """
+cdouble iter_max(__global const cdouble *, const size_t);
+
 cdouble iter_max(__global const cdouble * iterable, const size_t length) {
     cdouble current_max = iterable[0];
     for(size_t i = 1; i < length; i++) {
@@ -129,6 +145,9 @@ cdouble iter_max(__global const cdouble * iterable, const size_t length) {
 # TODO: Higher dimensions (esp. gaussian)?
 
 gaussian_pdf_templates = """
+cdouble gaussian(const cdouble, const cdouble, const cdouble);
+cdouble log_gaussian(const cdouble, const cdouble, const cdouble);
+
 cdouble gaussian(const cdouble value, const cdouble mean, const cdouble stddev) {
     return M_1_SQRT2PI * exp(-0.5 * pown((value - mean) / stddev, 2)) / stddev;
 }
@@ -139,6 +158,9 @@ cdouble log_gaussian(const cdouble value, const cdouble mean, const cdouble stdd
 """
 
 trunc_gaussian_pdf_templates = """
+cdouble trunc_gaussian(const cdouble, const cdouble, const cdouble, const cdouble, const cdouble);
+cdouble log_trunc_gaussian(const cdouble, const cdouble, const cdouble, const cdouble, const cdouble);
+
 cdouble trunc_gaussian(const cdouble value, const cdouble mean, const cdouble stddev,
                       const cdouble low, const cdouble high) {
     if(value < low || value > high) {
@@ -162,6 +184,11 @@ cdouble log_trunc_gaussian(const cdouble value, const cdouble mean, const cdoubl
 """
 
 power_law_templates = """
+cdouble power_law(const cdouble, const cdouble, const cdouble, const cdouble);
+cdouble power_law_falling(const cdouble, const cdouble, const cdouble);
+cdouble log_power_law(const cdouble, const cdouble, const cdouble, const cdouble);
+cdouble log_power_law_falling(const cdouble, const cdouble, const cdouble);
+
 cdouble power_law(const cdouble value, const cdouble slope, const cdouble low, const cdouble high) {
     if((value < low) || (value > high)) {
         return 0.;

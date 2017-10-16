@@ -13,11 +13,11 @@ pip install -e /path/to/GAPS/
 
 The main dependencies are `numpy`, `matplotlib`, and `pyopencl`. Installation instructions for `pyopencl` are available in its [documentation](https://documen.tician.de/pyopencl/misc.html) and may vary strongly based on the operating system.
 
-Under Windows a good methods  is to install the [AMD APP SDK](http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/), and the binaries for [cffi](http://www.lfd.uci.edu/~gohlke/pythonlibs/#cffi) and [pyopencl](http://www.lfd.uci.edu/~gohlke/pythonlibs/#pyopencl).
+Under Windows a good method is to install the [AMD APP SDK](http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/), and the binaries for [cffi](http://www.lfd.uci.edu/~gohlke/pythonlibs/#cffi) and [pyopencl](http://www.lfd.uci.edu/~gohlke/pythonlibs/#pyopencl).
 
 ### Usage:
 
-The core component of this module is the `gaps.run_sampler()` function, which requires the user to define a `logP_fn` function. This function signature is required to be of the form `cfloat logP_fn(const cfloat parameters USER_DATA)`, where `USER_DATA` enables the user the pass one or more global arrays through the sampler to `logP_fn`. Currently `USER_DATA` arrays may only be of type `__global const cdouble`. To get started quickly, check out `examples/basic_usage.py`, specifically lines 48-68.
+The core component of this module is the `gaps.run_sampler()` function, which requires the user to define a `logP_fn` function. This function signature is required to be of the form `cfloat logP_fn(const cfloat parameters USER_DATA)`, where `USER_DATA` enables the user the pass one or more global arrays through the sampler to `logP_fn`. Currently `USER_DATA` arrays may only be of type `__global const cdouble`. To get started quickly, check out `examples/fitting_2d_gaussian.py`.
 
 ### Examples:
 

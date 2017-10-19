@@ -255,6 +255,11 @@ def run_sampler(logP_fn_source, state, logP_state=None, data=None,
         print('WARNING: Given group size ({}) is above the device limit ({}) '
               'and has been overwritten to match the limit.'
               ''.format(group_size, limitations['group_size']))
+    if n_walkers < group_size:
+        if verbose:
+            print('Number of walkers ({}) below the estimated optimum '
+                  'group size ({}).'.format(n_walkers, group_size))
+        group_size = n_walkers
     if computed_group_size < group_size:
         print('WARNING: Estimated ideal group size ({}) is smaller then the '
               'given group size ({}).'.format(memory_size(computed_group_size),
